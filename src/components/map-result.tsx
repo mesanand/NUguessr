@@ -2,9 +2,12 @@
 
 import { MapContainer, TileLayer, Marker, Polyline } from "react-leaflet"
 import "leaflet/dist/leaflet.css"
-import { Icon } from "leaflet" 
+import { Icon } from "leaflet"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { Card, CardContent } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
+import { ArrowRight, PartyPopper } from "lucide-react"
 import { useEffect, useState } from "react"
 
 interface MapResultProps {
@@ -95,68 +98,87 @@ export default function MapResult({ guessCoords, actualCoords, onNextRound, roun
     [latMax, lngMax],
   ]
 
+  // A guess inside the 5000-point radius counts as "correct".
+  const isPerfect = !timeout && points === 5000
+
   return (
-    <div className="flex flex-col items-center justify-between py-4 h-screen bg-[#1a1b26] text-white">
-      <h1 className="text-4xl font-bold">Round {round}</h1>
+    <div className="min-h-[100dvh] flex flex-col bg-background text-foreground">
+      {/* Header bar, matching the gameplay screen */}
+      <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border bg-card px-4 sm:px-6">
+        <h1 className="text-xl font-semibold">Round {round} results</h1>
+        <span className="text-sm text-muted-foreground tabular-nums">
+          Total: {score.toLocaleString()} pts
+        </span>
+      </header>
 
-      {/* Map and Fun Fact Container */}
-      <div className="w-full h-[65vh] py-3 flex flex-row gap-4">
-        {/* Left Spacer for Balance */}
-        <div className="w-[250px]"></div>
-
-        {/* Map Container */}
-        <div className="flex-1 flex justify-center items-center h-full rounded-lg overflow-hidden">
-          <MapContainer
-            bounds={bounds}
-            boundsOptions={{ padding: [50, 50] }}
-            className="w-full h-full"
-          >
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            />
-            <Marker position={guessCoords} icon={customIcon} />
-            <Marker position={actualCoords} icon={flagIcon} />
-            <Polyline positions={[guessCoords, actualCoords]} dashArray={[10, 10]} color="#000000" weight={5} />
-          </MapContainer>
-        </div>
-        {/* Fun Fact Container - Properly Adjusting to Content */}
-        {notes && (
-          <div className="w-fit max-w-[250px] max-h-[200px] bg-white rounded-lg p-3 shadow-lg flex flex-col items-start overflow-y-auto">
-            <h2 className="text-lg font-bold text-gray-800 mb-1">📌 Fun Fact</h2>
-            <p className="text-black text-md whitespace-pre-wrap leading-tight">{notes}</p>
+      <main className="flex-1 container mx-auto flex flex-col gap-6 px-4 py-6">
+        {/* Map and Fun Fact */}
+        <div className="flex flex-col gap-4 lg:flex-row">
+          <div className="h-[45vh] min-h-[280px] flex-1 overflow-hidden rounded-2xl border border-border shadow-sm lg:h-[60vh]">
+            <MapContainer
+              bounds={bounds}
+              boundsOptions={{ padding: [50, 50] }}
+              className="w-full h-full"
+            >
+              <TileLayer
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              />
+              <Marker position={guessCoords} icon={customIcon} />
+              <Marker position={actualCoords} icon={flagIcon} />
+              <Polyline positions={[guessCoords, actualCoords]} dashArray={[10, 10]} color="#1f1e1b" weight={4} />
+            </MapContainer>
           </div>
-        )}
-      </div>
-
-      {/* Score, Accumulated Total, and Progress Bar */}
-      <div className="flex flex-col items-center w-full py-6">
-        <div className="text-3xl font-bold text-red-500">{points} points</div>
-        <div className="text-xl mt-2">
-          {/* Optionally show the running total score */}
-          Total Score: {score} points
-        </div>
-        <div className="w-full max-w-2xl py-2">
-          <Progress value={(points / 5000) * 100} className="h-2 bg-red-200" />
-        </div>
-        <div className="text-lg italic text-gray-300">
-          {timeout ? (
-            "Time's up!"
-          ) : (
-            <>
-              Your guess was <span className="font-bold">{distance} yards</span> from the correct location.
-            </>
+          {notes && (
+            <Card className="rounded-2xl border-border shadow-sm lg:w-72 lg:self-start">
+              <CardContent className="max-h-60 space-y-2 overflow-y-auto p-4">
+                <h3 className="text-xl font-semibold">Fun fact</h3>
+                <p className="whitespace-pre-wrap text-base text-muted-foreground">{notes}</p>
+              </CardContent>
+            </Card>
           )}
         </div>
-      </div>
 
-      {/* Next Round Button */}
-      <Button
-        onClick={onNextRound}
-        className="mt-2 px-8 py-6 text-lg bg-red-500 hover:bg-red-600 text-white rounded-full font-bold shadow-lg transition-transform hover:scale-105"
-      >
-        {round === 5 ? "VIEW RESULTS" : "START NEXT ROUND"}
-      </Button>
+        {/* Score feedback */}
+        <Card className="mx-auto w-full max-w-2xl rounded-2xl border-border shadow-sm">
+          <CardContent className="flex flex-col items-center gap-4 p-6 text-center">
+            {isPerfect && (
+              <span className="inline-flex items-center gap-2 rounded-lg bg-mint-9 px-3 py-1 text-sm font-semibold text-mint-12">
+                <PartyPopper className="size-4" aria-hidden="true" />
+                Spot on! Full points.
+              </span>
+            )}
+            <div className={cn("text-4xl font-bold tracking-tight tabular-nums", isPerfect ? "text-accent-foreground" : "text-primary")}>
+              {points.toLocaleString()} points
+            </div>
+            <div className="w-full">
+              <Progress value={(points / 5000) * 100} className={cn("h-2", isPerfect ? "bg-accent" : "bg-secondary")} />
+            </div>
+            <p className="text-base text-muted-foreground">
+              {timeout ? (
+                "Time's up!"
+              ) : (
+                <>
+                  Your guess was{" "}
+                  <span className="font-semibold text-primary">{distance} yards</span> from the correct location.
+                </>
+              )}
+            </p>
+            <p className="text-sm text-muted-foreground tabular-nums">
+              Total score: {score.toLocaleString()} points
+            </p>
+
+            {/* Next Round Button */}
+            <Button
+              onClick={onNextRound}
+              className="h-12 w-full rounded-lg text-base font-semibold sm:w-auto sm:px-8"
+            >
+              {round === 5 ? "View results" : "Start next round"}
+              <ArrowRight />
+            </Button>
+          </CardContent>
+        </Card>
+      </main>
     </div>
   )
 }

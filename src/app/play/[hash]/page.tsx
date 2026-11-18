@@ -20,6 +20,9 @@ import MapResult from "@/components/map-result"
 import exifr from "exifr" // EXIF extraction library
 import { useParams, useRouter } from "next/navigation"
 import Timer from "@/components/timer"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { Map as MapIcon, MapPin, X } from "lucide-react"
 import { updateUserStats } from "@/lib/user-stats"
 
 // ---------------------
@@ -251,28 +254,25 @@ export default function PlayPage() {
     isExpanded && markerPosition && !exifLoading && exifCoords !== null
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#1a1b26]">
-      <main className="h-screen relative">
-        {/* Timer Overlapping the Image */}
-        <div className="absolute top-12 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 p-4 rounded-lg">
-          <Timer seconds={45} onComplete={handleTimeout} />
+    <div className="h-[100dvh] flex flex-col bg-background text-foreground">
+      {/* Header bar: round indicator + timer on one row */}
+      <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border bg-card px-4 sm:px-6">
+        <div className="flex items-baseline gap-2">
+          <span className="text-sm text-muted-foreground">Round</span>
+          <span className="text-xl font-semibold tabular-nums">
+            {images.length > 0
+              ? `${currentImageIndex + 1} / ${images.length}`
+              : "–"}
+          </span>
         </div>
+        <Timer seconds={45} onComplete={handleTimeout} />
+      </header>
 
-        {/* Round Indicator (Top Right) */}
-        {images.length > 0 && (
-          <div className="absolute top-3 right-10 z-50 bg-[#E50000] text-white px-4 py-2 rounded-lg shadow-md font-bold">
-            <span className="rounded-full px-2 text-xs mb-1">Round</span>
-            <br />
-            <span className="text-white text-2xl font-bold">
-              {currentImageIndex + 1} / {images.length}
-            </span>
-          </div>
-        )}
-
-        {/* Main Content */}
+      {/* Photo fills the rest of the viewport (bottom padding on mobile
+          leaves room for the collapsed "Open map" bar). */}
+      <main className="relative flex-1 min-h-0 bg-muted pb-20 sm:pb-0">
         {images.length > 0 ? (
-          // Display the current image
-          <div className="relative w-full h-screen">
+          <div className="relative h-full w-full">
             <Image
               src={
                 getSupabaseImageUrl(images[currentImageIndex].image_url) ||
@@ -286,82 +286,138 @@ export default function PlayPage() {
             />
           </div>
         ) : fetchState === "loading" ? (
-          <p className="text-white flex items-center justify-center h-screen">
+          <p className="flex h-full items-center justify-center text-base text-muted-foreground">
             Loading images...
           </p>
         ) : (
-          <div className="text-white flex flex-col items-center justify-center h-screen gap-2 px-6 text-center">
-            <p className="text-xl font-bold">No locations found for this round.</p>
-            <p className="text-white/70 text-sm">
+          <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
+            <h2 className="text-2xl font-bold">No locations found for this round.</h2>
+            <p className="text-sm text-muted-foreground">
               {fetchState === "error"
                 ? "Something went wrong loading this round. Try refreshing, or start a new game."
                 : "This round's locations haven't been set up yet. Start a new game to try again."}
             </p>
           </div>
         )}
+      </main>
 
-        {/* Map & Guess Button Container */}
-        <div
-          ref={mapContainerRef}
-          className={`fixed bottom-4 right-4 sm:bottom-8 sm:right-8 rounded-lg overflow-hidden shadow-xl border border-gray-200 transition-all duration-300 ${
-            isExpanded
-              ? "w-[92vw] h-[60vh] sm:w-[50%] sm:h-[50vh]"
-              : "w-[220px] h-[150px] sm:w-[300px] sm:h-[200px]"
-          }`}
-        >
-          <div className="flex flex-col h-full">
-            {/* Map */}
-            <div className="flex-1 relative">
-              <MapContainer
-                center={[42.3398, -71.0892]}
-                zoom={16}
-                className="w-full h-full"
-              >
-                <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
-                />
-                <MapClickHandler setMarkerPosition={setMarkerPosition} />
-                {markerPosition && (
-                  <Marker position={markerPosition}>
-                    <Popup>
-                      Pin dropped at: {markerPosition.lat.toFixed(4)},{" "}
-                      {markerPosition.lng.toFixed(4)}
-                    </Popup>
-                  </Marker>
-                )}
-                <MapResizeHandler trigger={isExpanded} />
-              </MapContainer>
-              {/* Tap-to-expand overlay: works on mouse AND touch (hover never
-                  fires on a touchscreen, which is why the map was stuck tiny
-                  on mobile before). Hidden once expanded so it doesn't
-                  swallow real pin-drop clicks on the map underneath. */}
-              {!isExpanded && (
-                <button
-                  type="button"
-                  aria-label="Expand map to place your guess"
-                  onClick={() => setIsExpanded(true)}
-                  className="absolute inset-0 z-[500] bg-black/10 hover:bg-black/20 active:bg-black/25 flex items-center justify-center text-white text-sm font-bold"
-                >
-                  Tap to expand map
-                </button>
-              )}
+      {/* Guess map card. Desktop: compact corner card that expands on
+          click/tap. Mobile: collapsed "Open map" bar that expands into a
+          full-width bottom sheet. Everything interactive lives inside
+          mapContainerRef so the outside-tap collapse listener ignores it. */}
+      <div
+        ref={mapContainerRef}
+        className={cn(
+          "fixed z-[1000] flex flex-col overflow-hidden border-border bg-card shadow-md transition-all duration-300",
+          "inset-x-0 bottom-0 rounded-t-2xl border-t",
+          "sm:inset-x-auto sm:bottom-6 sm:right-6 sm:rounded-2xl sm:border",
+          isExpanded
+            ? "h-[80dvh] sm:h-[60vh] sm:w-[50vw]"
+            : "h-auto sm:h-[200px] sm:w-[300px]"
+        )}
+      >
+        {isExpanded && (
+          <div className="shrink-0 border-b border-border">
+            {/* Drag handle (mobile bottom sheet affordance) */}
+            <div className="flex justify-center pt-2 sm:hidden" aria-hidden="true">
+              <div className="h-1.5 w-12 rounded-full bg-border" />
             </div>
-            {/* Guess Button */}
+            <div className="flex items-center justify-between gap-2 py-1 pl-4 pr-1">
+              <h3 className="text-base font-semibold">Drop a pin on your guess</h3>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Close map"
+                onClick={() => setIsExpanded(false)}
+                className="h-11 w-11 rounded-lg"
+              >
+                <X />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Map (hidden on mobile while collapsed; MapResizeHandler
+            re-measures it once expanded) */}
+        <div
+          className={cn(
+            "relative flex-1 min-h-0",
+            !isExpanded && "hidden sm:block"
+          )}
+        >
+          <MapContainer
+            center={[42.3398, -71.0892]}
+            zoom={16}
+            className="w-full h-full"
+          >
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors"
+            />
+            <MapClickHandler setMarkerPosition={setMarkerPosition} />
+            {markerPosition && (
+              <Marker position={markerPosition}>
+                <Popup>
+                  Pin dropped at: {markerPosition.lat.toFixed(4)},{" "}
+                  {markerPosition.lng.toFixed(4)}
+                </Popup>
+              </Marker>
+            )}
+            <MapResizeHandler trigger={isExpanded} />
+          </MapContainer>
+          {/* Tap-to-expand overlay: works on mouse AND touch (hover never
+              fires on a touchscreen, which is why the map was stuck tiny
+              on mobile before). Hidden once expanded so it doesn't
+              swallow real pin-drop clicks on the map underneath. */}
+          {!isExpanded && (
             <button
+              type="button"
+              aria-label="Expand map to place your guess"
+              onClick={() => setIsExpanded(true)}
+              className="absolute inset-0 z-[500] flex items-end justify-center bg-foreground/5 p-3 transition-colors hover:bg-foreground/10 active:bg-foreground/15"
+            >
+              <span className="inline-flex h-11 items-center gap-2 rounded-lg bg-card px-4 text-sm font-medium text-card-foreground shadow-sm">
+                <MapIcon className="size-4" />
+                Click to place your guess
+              </span>
+            </button>
+          )}
+        </div>
+
+        {/* Mobile collapsed state: clear 44px+ "Open map" control */}
+        {!isExpanded && (
+          <div className="p-3 sm:hidden">
+            <Button
+              type="button"
+              onClick={() => setIsExpanded(true)}
+              className="h-12 w-full rounded-lg text-base font-semibold"
+            >
+              <MapIcon />
+              Open map
+            </Button>
+          </div>
+        )}
+
+        {/* Guess Button */}
+        {isExpanded && (
+          <div className="shrink-0 border-t border-border p-3">
+            <Button
+              type="button"
               onClick={handleGuess}
               disabled={!canGuess}
-              className={`w-full px-6 py-2 rounded-lg shadow-md transition font-black ${
-                canGuess
-                  ? "bg-[#D41B2C] text-white text-xl hover:bg-[#b31724] cursor-pointer"
-                  : "bg-gray-400 text-gray-700 text-xl cursor-not-allowed"
-              }`}
+              className="h-12 w-full rounded-lg text-base font-semibold"
             >
-              {exifLoading ? "Loading EXIF..." : "Guess"}
-            </button>
+              <MapPin />
+              {exifLoading
+                ? "Loading EXIF..."
+                : markerPosition
+                  ? "Submit guess"
+                  : "Tap the map to drop a pin"}
+            </Button>
           </div>
-        </div>
-      </main>
+        )}
+      </div>
     </div>
   )
 }
