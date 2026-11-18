@@ -2,6 +2,7 @@
 
 import React from "react"
 import { useEffect, useState } from "react"
+import { Clock } from "lucide-react"
 import { cn } from "../lib/utils"
 
 interface TimerProps {
@@ -31,16 +32,23 @@ export default function Timer({ seconds, onComplete, className }: TimerProps) {
 
   const formattedTime = `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`
 
+  // Last 10 seconds: switch to the primary (tomato) treatment as a warning.
+  const isLow = timeLeft <= 10
+
   return (
-  <div
-    className={cn(
-      "bg-black/90 text-white px-6 py-2 rounded-full text-2xl font-mono tracking-wider",
-      "shadow-[0_0_40px_rgba(220,38,38,0.5)] border-2 border-red-600",
-      className,
-    )}
-  >
-    {formattedTime}
-  </div>
+    <div
+      role="timer"
+      aria-label={`${formattedTime} remaining`}
+      className={cn(
+        "inline-flex h-11 items-center gap-2 rounded-lg border px-3 font-mono text-lg font-semibold tabular-nums transition-colors",
+        isLow
+          ? "border-primary bg-secondary text-secondary-foreground"
+          : "border-border bg-background text-foreground",
+        className,
+      )}
+    >
+      <Clock className="size-4" aria-hidden="true" />
+      {formattedTime}
+    </div>
   )
 }
-
