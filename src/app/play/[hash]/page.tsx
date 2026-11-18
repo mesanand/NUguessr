@@ -120,9 +120,9 @@ export default function PlayPage() {
   // Create a ref for the map container element.
   const mapContainerRef = useRef<HTMLDivElement>(null)
 
-  // Collapse the map if the user clicks outside the map container.
+  // Collapse the map if the user clicks or taps outside the map container.
   useEffect(() => {
-    function handleMouseDown(event: MouseEvent) {
+    function handleOutsideInteraction(event: MouseEvent | TouchEvent) {
       if (
         mapContainerRef.current &&
         !mapContainerRef.current.contains(event.target as Node)
@@ -130,13 +130,18 @@ export default function PlayPage() {
         setIsExpanded(false)
       }
     }
-    document.addEventListener("mousedown", handleMouseDown)
+    document.addEventListener("mousedown", handleOutsideInteraction)
+    document.addEventListener("touchstart", handleOutsideInteraction)
     return () => {
-      document.removeEventListener("mousedown", handleMouseDown)
+      document.removeEventListener("mousedown", handleOutsideInteraction)
+      document.removeEventListener("touchstart", handleOutsideInteraction)
     }
   }, [])
 
   // Fetch images from Supabase using the ids provided in the URL.
+  const [fetchState, setFetchState] = useState<"loading" | "done" | "error">(
+    "loading"
+  )
   useEffect(() => {
     async function fetchImages() {
       if (idArray.length === 0) return
@@ -147,12 +152,14 @@ export default function PlayPage() {
         .in("id", idArray)
       if (error) {
         console.error("Error fetching images:", error)
+        setFetchState("error")
       } else if (data) {
         // Sort the images in the order provided by the URL
         data.sort(
           (a: any, b: any) => idArray.indexOf(a.id) - idArray.indexOf(b.id)
         )
         setImages(data)
+        setFetchState("done")
       }
     }
     fetchImages()
@@ -278,17 +285,29 @@ export default function PlayPage() {
               priority
             />
           </div>
+        ) : fetchState === "loading" ? (
+          <p className="text-white flex items-center justify-center h-screen">
+            Loading images...
+          </p>
         ) : (
-          <p className="text-white">Loading images...</p>
+          <div className="text-white flex flex-col items-center justify-center h-screen gap-2 px-6 text-center">
+            <p className="text-xl font-bold">No locations found for this round.</p>
+            <p className="text-white/70 text-sm">
+              {fetchState === "error"
+                ? "Something went wrong loading this round. Try refreshing, or start a new game."
+                : "This round's locations haven't been set up yet. Start a new game to try again."}
+            </p>
+          </div>
         )}
 
         {/* Map & Guess Button Container */}
         <div
           ref={mapContainerRef}
-          className={`fixed bottom-8 right-8 rounded-lg overflow-hidden shadow-xl border border-gray-200 transition-all duration-300 ${
-            isExpanded ? "w-[50%] h-[50vh]" : "w-[300px] h-[200px]"
+          className={`fixed bottom-4 right-4 sm:bottom-8 sm:right-8 rounded-lg overflow-hidden shadow-xl border border-gray-200 transition-all duration-300 ${
+            isExpanded
+              ? "w-[92vw] h-[60vh] sm:w-[50%] sm:h-[50vh]"
+              : "w-[220px] h-[150px] sm:w-[300px] sm:h-[200px]"
           }`}
-          onMouseEnter={() => setIsExpanded(true)}
         >
           <div className="flex flex-col h-full">
             {/* Map */}
@@ -313,6 +332,20 @@ export default function PlayPage() {
                 )}
                 <MapResizeHandler trigger={isExpanded} />
               </MapContainer>
+              {/* Tap-to-expand overlay: works on mouse AND touch (hover never
+                  fires on a touchscreen, which is why the map was stuck tiny
+                  on mobile before). Hidden once expanded so it doesn't
+                  swallow real pin-drop clicks on the map underneath. */}
+              {!isExpanded && (
+                <button
+                  type="button"
+                  aria-label="Expand map to place your guess"
+                  onClick={() => setIsExpanded(true)}
+                  className="absolute inset-0 z-[500] bg-black/10 hover:bg-black/20 active:bg-black/25 flex items-center justify-center text-white text-sm font-bold"
+                >
+                  Tap to expand map
+                </button>
+              )}
             </div>
             {/* Guess Button */}
             <button
