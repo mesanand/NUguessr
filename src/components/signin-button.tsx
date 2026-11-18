@@ -18,11 +18,11 @@ export function SignInButton() {
     <Suspense
       fallback={
         <Button
-          className="text-white items-center bg-red-600 py-7 px-6 rounded-full text-2xl shadow-lg opacity-70"
+          className="h-11 rounded-lg px-5 text-base font-semibold"
           type="button"
           disabled
         >
-          <Icons.loaderCircle className="mr-2 size-4 animate-spin" /> Log in
+          <Icons.loaderCircle className="animate-spin" /> Log in
         </Button>
       }
     >
@@ -73,18 +73,18 @@ function SignInButtonInner() {
     }
 
     return (
-      <Button 
-        className="text-white items-center bg-red-600 hover:bg-red-700 py-7 px-6 rounded-full text-2xl shadow-lg transition-all hover:scale-105"
+      <Button
+        className="h-11 rounded-lg px-5 text-base font-semibold"
         type="button"
         onClick={handleButtonClick}
         disabled={isGoogleLoading}
-        style={{ textShadow: "0 2px 4px rgba(0,0,0,0.5)" }} 
+        aria-busy={isGoogleLoading}
       >
         {isGoogleLoading ? (
-          <Icons.loaderCircle className="mr-2 size-4 animate-spin" />
+          <Icons.loaderCircle className="animate-spin" />
         ) : (
-          <div className="mr-2 outline bg-white rounded-full">{ProfileImage()}</div> 
-        )}{" "}
+          <ProfileImage />
+        )}
         {user?.email ? "Profile" : "Log in"}
       </Button>
       )

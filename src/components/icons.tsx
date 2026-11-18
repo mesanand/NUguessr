@@ -1,9 +1,20 @@
-import { LoaderCircle, LogIn, LogOut, LucideProps } from "lucide-react"
- 
+import {
+  LoaderCircle,
+  LogIn,
+  LogOut,
+  LucideProps,
+  MapPin,
+  Trophy,
+  User,
+} from "lucide-react"
+
 export const Icons = {
   logIn: LogIn,
   logOut: LogOut,
   loaderCircle: LoaderCircle,
+  mapPin: MapPin,
+  trophy: Trophy,
+  user: User,
   google: ({ ...props }: LucideProps) => (
     <svg
       aria-hidden="true"
