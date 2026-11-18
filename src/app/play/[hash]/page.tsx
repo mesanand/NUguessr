@@ -16,12 +16,11 @@ import Image from "next/image"
 import "@fontsource/titillium-web"
 import "leaflet/dist/leaflet.css"
 import { createClient } from "@/lib/supabase/client"
-import MapResult from "./../../../components/map-result" // adjust path as needed
+import MapResult from "@/components/map-result"
 import exifr from "exifr" // EXIF extraction library
-import { useParams } from "next/navigation"
-import { useSearchParams, useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation"
 import Timer from "@/components/timer"
-import { updateHighScore } from "@/app/play-finish/page"
+import { updateUserStats } from "@/lib/user-stats"
 
 // ---------------------
 // Supabase & Image Helpers
@@ -58,8 +57,6 @@ const Popup = dynamic(
   () => import("react-leaflet").then((mod) => mod.Popup),
   { ssr: false }
 )
-
-var locationArray = []
 
 import { useMap, useMapEvent } from "react-leaflet"
 
@@ -102,18 +99,12 @@ export default function PlayPage() {
   const router = useRouter()
 
   const params = useParams()
-  console.log("Route params:", params)
-
   const id = params?.hash
-  console.log("Dynamic parameter id:", id)
 
   // Parse the id string into an array of numbers.
   const idArray: number[] = useMemo(() => {
     if (!id) return []
-    console.log("Raw id:", id)
-    const arr = (id as string).split("-").map((idStr: string) => Number.parseInt(idStr, 10))
-    console.log("Parsed idArray:", arr)
-    return arr
+    return (id as string).split("-").map((idStr: string) => Number.parseInt(idStr, 10))
   }, [id])
 
   // State variables for managing images, current image index, marker position, EXIF data, and view state.
@@ -154,7 +145,6 @@ export default function PlayPage() {
         .from("places")
         .select("*")
         .in("id", idArray)
-      console.log("ID Array used for query:", idArray)
       if (error) {
         console.error("Error fetching images:", error)
       } else if (data) {
@@ -162,7 +152,6 @@ export default function PlayPage() {
         data.sort(
           (a: any, b: any) => idArray.indexOf(a.id) - idArray.indexOf(b.id)
         )
-        console.log("Fetched images:", data)
         setImages(data)
       }
     }
@@ -210,61 +199,6 @@ export default function PlayPage() {
     }
   }
 
-  const updateTotalGamesPlayed = async () => {
-    console.log("updateTotalGamesPlayed function called")
-
-    const supabaseClient = createClient()
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser()
-
-    if (userError || !userData?.user) {
-        console.error("Error getting user:", userError)
-        return
-    }
-
-    const userId = userData.user.id
-    console.log("Authenticated user ID:", userId)
-
-    // Fetch the user's current total_games count
-    let { data: userRecord, error: fetchError } = await supabaseClient
-        .from("users")
-        .select("total_games")
-        .eq("id", userId)
-        .single()
-
-    if (fetchError) {
-        console.warn("User not found, inserting new record...")
-
-        // Insert new user record with total_games = 1
-        const { error: insertError } = await supabaseClient
-            .from("users")
-            .insert([{ id: userId, total_games: 1 }])
-
-        if (insertError) {
-            console.error("Error inserting new user:", insertError)
-            return
-        }
-
-        console.log("New user inserted with total_games = 1")
-        return
-    }
-
-    console.log("Current total games:", userRecord?.total_games)
-
-    const newTotalGames = (userRecord?.total_games || 0) + 1
-
-    // Update total_games
-    const { error: updateError } = await supabaseClient
-        .from("users")
-        .update({ total_games: newTotalGames })
-        .eq("id", userId)
-
-    if (updateError) {
-        console.error("Error updating total games:", updateError)
-    } else {
-        console.log(`Successfully updated total games to: ${newTotalGames}`)
-    }
-}
-
   // Handler for moving to the next round.
   const handleNextRound = async () => {
     if (currentImageIndex < images.length - 1) {
@@ -273,10 +207,10 @@ export default function PlayPage() {
       setShowResult(false)
       setTimeout(false)
     } else {
-      // All rounds completed. You can add any completion logic here.
-      console.log("Game completed!")
-      await updateTotalGamesPlayed()
-      //await updateHighScore()
+      // All rounds completed. MapResult has already written the accumulated
+      // finalScore to localStorage by this point (it does so on the 5th round).
+      const finalScore = Number(localStorage.getItem("finalScore") || "0")
+      await updateUserStats(finalScore)
       router.push("/play-finish")
     }
   }
@@ -293,7 +227,6 @@ export default function PlayPage() {
   // render the MapResult component.
   if (showResult && markerPosition && exifCoords) {
     const guessCoords: [number, number] = [markerPosition.lat, markerPosition.lng]
-    locationArray.push({ Guess: guessCoords, Actual: exifCoords })
     return (
       <MapResult
         guessCoords={guessCoords}
@@ -301,10 +234,7 @@ export default function PlayPage() {
         onNextRound={handleNextRound}
         round={currentImageIndex + 1}
         timeout={timeout}
-        notes={images[currentImageIndex].notes}  // <-- Updated: Passing the fetched note here.
-        onRoundComplete={(points: number) => {
-          console.log(`Round completed with ${points} points`)
-        }}
+        notes={images[currentImageIndex].notes}
       />
     )
   }

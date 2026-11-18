@@ -1,29 +1,59 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Trophy, Medal, Search } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 
-// Mock data - replace with actual data from your database
-const leaderboardData = [
-  { rank: 1, username: "Kanghosaeyo", totalScore: 999999, gamesPlayed: 50, avgScore: 500, accuracy: "95%" }, // 'accuracy' field represents % explored
-  { rank: 2, username: "Philyshark7", totalScore: 22000, gamesPlayed: 45, avgScore: 489, accuracy: "92%" },
-  { rank: 3, username: "Joshuaa_chann", totalScore: 20000, gamesPlayed: 42, avgScore: 476, accuracy: "90%" },
-  { rank: 4, username: "Alantai26", totalScore: 18500, gamesPlayed: 40, avgScore: 463, accuracy: "88%" },
-  { rank: 5, username: "MapMaster", totalScore: 17000, gamesPlayed: 38, avgScore: 447, accuracy: "85%" },
-  { rank: 6, username: "CampusKing", totalScore: 16000, gamesPlayed: 35, avgScore: 457, accuracy: "86%" },
-  { rank: 7, username: "HuskieNav", totalScore: 15000, gamesPlayed: 33, avgScore: 455, accuracy: "84%" },
-  { rank: 8, username: "PathPro", totalScore: 14000, gamesPlayed: 30, avgScore: 467, accuracy: "87%" },
-  { rank: 9, username: "NEUExplorer", totalScore: 13000, gamesPlayed: 28, avgScore: 464, accuracy: "85%" },
-  { rank: 10, username: "Landmarker", totalScore: 12000, gamesPlayed: 25, avgScore: 480, accuracy: "89%" },
-]
+type LeaderboardRow = {
+  id: string
+  username: string
+  high_score: number
+  total_games: number
+  avg_score: number
+}
 
 export default function LeaderboardsPage() {
-  const [sortBy, setSortBy] = useState("rank")
+  const [sortBy, setSortBy] = useState("high_score")
   const [searchQuery, setSearchQuery] = useState("")
+  const [rows, setRows] = useState<LeaderboardRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Pulls real standings from the `users` table. The original version of
+  // this page never queried Supabase at all — it rendered a hardcoded
+  // array of fake names and scores regardless of who had actually played.
+  useEffect(() => {
+    async function fetchLeaderboard() {
+      const supabase = createClient()
+      // Reads from a view rather than the `users` table directly, so a
+      // public/anon leaderboard query can never surface email or role.
+      const { data, error } = await supabase
+        .from("leaderboard_public")
+        .select("id, username, high_score, total_games, avg_score")
+        .order("high_score", { ascending: false })
+        .limit(100)
+
+      if (error) {
+        setError(error.message)
+      } else {
+        setRows(
+          (data ?? []).map((row) => ({
+            id: row.id,
+            username: row.username || "Anonymous Husky",
+            high_score: row.high_score ?? 0,
+            total_games: row.total_games ?? 0,
+            avg_score: row.avg_score ?? 0,
+          }))
+        )
+      }
+      setLoading(false)
+    }
+    fetchLeaderboard()
+  }, [])
 
   const getRankColor = (rank: number) => {
     switch (rank) {
@@ -51,26 +81,22 @@ export default function LeaderboardsPage() {
     }
   }
 
-  const filteredData = leaderboardData
+  const filteredData = rows
     .filter((player) => player.username.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
       switch (sortBy) {
-        case "totalScore":
-          return b.totalScore - a.totalScore
-        case "gamesPlayed":
-          return b.gamesPlayed - a.gamesPlayed
-        case "avgScore":
-          return b.avgScore - a.avgScore
-        case "accuracy":
-          return Number.parseInt(b.accuracy) - Number.parseInt(a.accuracy)
+        case "total_games":
+          return b.total_games - a.total_games
+        case "avg_score":
+          return b.avg_score - a.avg_score
         default:
-          return a.rank - b.rank
+          return b.high_score - a.high_score
       }
     })
+    .map((player, index) => ({ ...player, rank: index + 1 }))
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Header */}
       <header className="w-full bg-[#D41B2C] p-4 text-center shadow-md">
         <h1 className="text-4xl font-bold text-white">All-Time Leaderboards</h1>
       </header>
@@ -95,48 +121,54 @@ export default function LeaderboardsPage() {
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="rank">Rank</SelectItem>
-                    <SelectItem value="totalScore">Total Score</SelectItem>
-                    <SelectItem value="gamesPlayed">Games Played</SelectItem>
-                    <SelectItem value="avgScore">Average Score</SelectItem>
-                    <SelectItem value="accuracy">% Explored</SelectItem>
+                    <SelectItem value="high_score">High Score</SelectItem>
+                    <SelectItem value="total_games">Games Played</SelectItem>
+                    <SelectItem value="avg_score">Average Score</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[100px]">Rank</TableHead>
-                    <TableHead>Player</TableHead>
-                    <TableHead className="text-right">Total Score</TableHead>
-                    <TableHead className="text-right">Games Played</TableHead>
-                    <TableHead className="text-right">Avg Score</TableHead>
-                    <TableHead className="text-right">% Explored</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredData.map((player) => (
-                    <TableRow key={player.rank}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          {getRankIcon(player.rank)}
-                          <span className={getRankColor(player.rank)}>#{player.rank}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="font-semibold">{player.username}</TableCell>
-                      <TableCell className="text-right">{player.totalScore.toLocaleString()}</TableCell>
-                      <TableCell className="text-right">{player.gamesPlayed}</TableCell>
-                      <TableCell className="text-right">{player.avgScore}</TableCell>
-                      <TableCell className="text-right">{player.accuracy}</TableCell>
+            {loading ? (
+              <p className="text-muted-foreground text-center py-8">Loading leaderboard...</p>
+            ) : error ? (
+              <p className="text-red-600 text-center py-8">Couldn&apos;t load the leaderboard: {error}</p>
+            ) : filteredData.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">
+                No scores yet — be the first to play!
+              </p>
+            ) : (
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[100px]">Rank</TableHead>
+                      <TableHead>Player</TableHead>
+                      <TableHead className="text-right">High Score</TableHead>
+                      <TableHead className="text-right">Games Played</TableHead>
+                      <TableHead className="text-right">Avg Score</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredData.map((player) => (
+                      <TableRow key={player.id}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {getRankIcon(player.rank)}
+                            <span className={getRankColor(player.rank)}>#{player.rank}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-semibold">{player.username}</TableCell>
+                        <TableCell className="text-right">{player.high_score.toLocaleString()}</TableCell>
+                        <TableCell className="text-right">{player.total_games}</TableCell>
+                        <TableCell className="text-right">{player.avg_score.toLocaleString()}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>

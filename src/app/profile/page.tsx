@@ -19,13 +19,21 @@ import {
   BarChart2,
   Trophy,
 } from "lucide-react"
-import { Progress } from "@/components/ui/progress"
 export default function ProfilePage() {
   const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [isSavingUsername, setIsSavingUsername] = useState(false);
   const { user } = useUser();  // Assuming `useUser` hook fetches authenticated user data
   const supabaseClient = createClient();
 
-  const [username, setUsername] = useState(user?.user_metadata.name || "");
+  const [username, setUsername] = useState(user?.user_metadata?.name || "");
+
+  // Keep the field in sync once the user object actually loads (it starts
+  // out null on first render, so the initial useState value above is often "").
+  useEffect(() => {
+    if (user?.user_metadata?.name) {
+      setUsername(user.user_metadata.name);
+    }
+  }, [user?.user_metadata?.name]);
   const [gamesPlayed, setGamesPlayed] = useState<number | null>(null);  // Initialize as null
   const [highScore, setHighScore] = useState<number | null>(null);  // Initialize as null
   const [avgScore, setAvgScore] = useState<number | null>(null);  // Initialize as null
@@ -95,6 +103,24 @@ export default function ProfilePage() {
     return `/play/${fiveNumbers.join("-")}`
   }, [])
 
+  // Persist the edited username. The original version only toggled local
+  // state here and never actually wrote anywhere, so edits vanished on refresh.
+  const saveUsername = async () => {
+    if (!user?.id) return
+    setIsSavingUsername(true)
+    try {
+      const [{ error: authError }, { error: dbError }] = await Promise.all([
+        supabaseClient.auth.updateUser({ data: { name: username } }),
+        supabaseClient.from("users").update({ username }).eq("id", user.id),
+      ])
+      if (authError) console.error("Error updating auth profile:", authError)
+      if (dbError) console.error("Error updating username in users table:", dbError)
+    } finally {
+      setIsSavingUsername(false)
+      setIsEditingUsername(false)
+    }
+  }
+
   const navigateLeaderboard = () => {
     router.push("/leaderboards");
   };
@@ -142,7 +168,8 @@ export default function ProfilePage() {
                         <Button
                           size="icon"
                           variant="ghost"
-                          onClick={() => setIsEditingUsername(false)}
+                          onClick={saveUsername}
+                          disabled={isSavingUsername}
                           aria-label="Save username"
                           className="text-primary hover:text-primary/90 hover:bg-primary/10"
                         >
@@ -200,7 +227,9 @@ export default function ProfilePage() {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-muted-foreground">High Score</p>
-                        <p className="text-2xl font-bold text-primary">24740</p> {/* Displaying high score */}
+                        <p className="text-2xl font-bold text-primary">
+                          {highScore !== null ? highScore.toLocaleString() : "Loading..."}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -212,7 +241,9 @@ export default function ProfilePage() {
                       </div>
                       <div>
                         <p className="text-sm font-medium text-muted-foreground">Average Score</p>
-                        <p className="text-2xl font-bold text-primary">18544</p> {/* Displaying average score */}
+                        <p className="text-2xl font-bold text-primary">
+                          {avgScore !== null ? avgScore.toLocaleString() : "Loading..."}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -229,15 +260,6 @@ export default function ProfilePage() {
               >
                 <Trophy className="mr-2 h-5 w-5" /> Leaderboards
               </Button>
-
-              {/* Progress Indicator */}
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between text-sm px-1">
-                  <span className="text-muted-foreground">% of NEU Landmarks Discovered</span>
-                  <span className="font-medium text-primary">75%</span>
-                </div>
-                <Progress value={75} className="h-2" />
-              </div>
             </div>
           </div>
 
