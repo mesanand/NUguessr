@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser } from "../../../hooks/use-user";
 import { SignOutButton } from "@/components/signout-button";
 import { useRouter } from "next/navigation";
@@ -13,7 +14,6 @@ import {
   MapPin,
   Edit2,
   Save,
-  BarChartIcon as ChartBar,
   GamepadIcon,
   Star,
   BarChart2,
@@ -37,7 +37,6 @@ export default function ProfilePage() {
   const [gamesPlayed, setGamesPlayed] = useState<number | null>(null);  // Initialize as null
   const [highScore, setHighScore] = useState<number | null>(null);  // Initialize as null
   const [avgScore, setAvgScore] = useState<number | null>(null);  // Initialize as null
-  const [profImage, setProfileImage] = useState<string>("/placeholder.svg?height=112&width=112");
   const router = useRouter();
 
   // Fetch the user's total games from the database
@@ -129,152 +128,132 @@ export default function ProfilePage() {
     router.push(randomLink);
   };
 
+  const stats = [
+    {
+      label: "High Score",
+      icon: Star,
+      value: highScore !== null ? highScore.toLocaleString() : null,
+    },
+    {
+      label: "Average Score",
+      icon: BarChart2,
+      value: avgScore !== null ? avgScore.toLocaleString() : null,
+    },
+    {
+      label: "Games Played",
+      icon: GamepadIcon,
+      value: gamesPlayed !== null ? gamesPlayed.toLocaleString() : null,
+    },
+  ]
+
+  const avatarUrl: string | undefined = user?.user_metadata?.avatar_url
+  const initial = (username || "?").trim().charAt(0).toUpperCase()
+
   return (
-    <div className="h-screen flex flex-col bg-white overflow-hidden">
-      <div className="flex-1 container px-4 py-4">
-        <div className="h-full grid gap-4 md:grid-cols-[1fr_2fr] md:grid-rows-[1fr_auto]">
-          {/* Profile Section */}
-          <div className="h-full">
-            <Card className="h-full shadow-lg">
-              <CardContent className="h-full flex flex-col items-center justify-center gap-4 p-4">
-                <Image
-                  src="/logo.png"
-                  alt="NUGuessr Logo"
-                  width={300}
-                  height={500}
-                  className="flex flex-col items-center justify-center mx-auto"
-                  priority
-                />
-                <div className="flex flex-col items-center justify-center gap-4 mt-8">
-                  <div className="relative">
-                    {profImage ? (
-                      <img
-                        src={user?.user_metadata.avatar_url}
-                        alt="Profile picture"
-                        className="h-full w-full rounded-full object-cover"
-                      />
-                    ) : (
-                      <span className="text-3xl text-gray-500"></span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {isEditingUsername ? (
-                      <div className="flex items-center gap-2">
-                        <Input
-                          value={username}
-                          onChange={(e) => setUsername(e.target.value)}
-                          className="max-w-[200px] border-primary focus-visible:ring-primary"
-                        />
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={saveUsername}
-                          disabled={isSavingUsername}
-                          aria-label="Save username"
-                          className="text-primary hover:text-primary/90 hover:bg-primary/10"
-                        >
-                          <Save className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xl font-bold text-primary">{username}</span>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => setIsEditingUsername(true)}
-                          aria-label="Edit username"
-                          className="text-primary hover:text-primary/90 hover:bg-primary/10"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                  <SignOutButton />
+    <div className="min-h-screen bg-background text-foreground">
+      <main className="container mx-auto max-w-4xl px-4 py-8 sm:py-12">
+        <div className="mb-8 flex justify-center">
+          <Image
+            src="/logo.png"
+            alt="NUGuessr Logo"
+            width={240}
+            height={400}
+            className="h-auto w-48 sm:w-60"
+            priority
+          />
+        </div>
+
+        {/* Profile header */}
+        <Card className="rounded-2xl border-border bg-card shadow-sm">
+          <CardContent className="flex flex-col items-center gap-4 p-6 sm:flex-row sm:justify-between">
+            <div className="flex flex-col items-center gap-4 sm:flex-row">
+              <Avatar className="h-20 w-20">
+                {avatarUrl && <AvatarImage src={avatarUrl} alt="Profile picture" />}
+                <AvatarFallback className="bg-secondary text-2xl font-bold text-secondary-foreground">
+                  {initial}
+                </AvatarFallback>
+              </Avatar>
+              {isEditingUsername ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    aria-label="Username"
+                    className="h-11 max-w-[220px] rounded-lg"
+                  />
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={saveUsername}
+                    disabled={isSavingUsername}
+                    aria-label="Save username"
+                    className="min-h-11 min-w-11 rounded-lg text-primary hover:bg-secondary hover:text-secondary-foreground"
+                  >
+                    <Save className="h-5 w-5" />
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Stats Section */}
-          <div className="flex flex-col gap-4">
-            <Card className="flex-1 shadow-lg">
-              <CardHeader className="pb-2 pt-4 px-4">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <ChartBar className="h-5 w-5 text-primary" />
-                  Stats
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4">
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="flex items-center justify-between p-4 rounded-lg bg-gray-50">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-full bg-primary/10">
-                        <GamepadIcon className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Games Played</p>
-                        <p className="text-2xl font-bold text-primary">{gamesPlayed !== null ? gamesPlayed : "Loading..."}</p> {/* Displaying total games */}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 rounded-lg bg-gray-50">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-full bg-primary/10">
-                        <Star className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">High Score</p>
-                        <p className="text-2xl font-bold text-primary">
-                          {highScore !== null ? highScore.toLocaleString() : "Loading..."}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-4 rounded-lg bg-gray-50">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-full bg-primary/10">
-                        <BarChart2 className="h-5 w-5 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-muted-foreground">Average Score</p>
-                        <p className="text-2xl font-bold text-primary">
-                          {avgScore !== null ? avgScore.toLocaleString() : "Loading..."}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold">{username}</h1>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => setIsEditingUsername(true)}
+                    aria-label="Edit username"
+                    className="min-h-11 min-w-11 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                  >
+                    <Edit2 className="h-5 w-5" />
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-
-            <div className="space-y-4">
-              {/* Leaderboards Button */}
-              <Button
-                variant="outline"
-                className="w-full h-12 text-lg font-bold border-2 border-primary text-primary hover:bg-primary hover:text-white transition-colors"
-                onClick={navigateLeaderboard}
-              >
-                <Trophy className="mr-2 h-5 w-5" /> Leaderboards
-              </Button>
+              )}
             </div>
-          </div>
+            <SignOutButton />
+          </CardContent>
+        </Card>
 
-          {/* Play Button */}
+        {/* Stats */}
+        <section aria-labelledby="stats-heading" className="mt-8">
+          <h2 id="stats-heading" className="mb-4 text-xl font-semibold">
+            Your stats
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {stats.map(({ label, icon: Icon, value }) => (
+              <Card key={label} className="rounded-2xl border-border bg-card shadow-sm">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 p-6 pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
+                  <Icon className="h-5 w-5 text-primary" aria-hidden="true" />
+                </CardHeader>
+                <CardContent className="p-6 pt-0">
+                  {value !== null ? (
+                    <p className="text-4xl font-bold tracking-tight">{value}</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Loading…</p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+
+        {/* Actions */}
+        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Button
-            className="h-16 w-full col-span-2 rounded-none text-2xl font-bold shadow-lg bg-primary hover:bg-primary/90 transition-colors text-white"
+            size="lg"
+            className="h-12 w-full rounded-lg text-base font-semibold"
             onClick={navigatePlay}
           >
-            <div className="flex items-center justify-center gap-4">
-              <MapPin className="h-8 w-8" />
-              Play!
-            </div>
+            <MapPin className="mr-2 h-5 w-5" /> Play
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            className="h-12 w-full rounded-lg text-base font-semibold"
+            onClick={navigateLeaderboard}
+          >
+            <Trophy className="mr-2 h-5 w-5" /> Leaderboards
           </Button>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
