@@ -55,27 +55,17 @@ export default function LeaderboardsPage() {
     fetchLeaderboard()
   }, [])
 
-  const getRankColor = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return "text-yellow-500"
-      case 2:
-        return "text-gray-400"
-      case 3:
-        return "text-amber-700"
-      default:
-        return "text-gray-600"
-    }
-  }
+  // Top three get the brand accent; everyone else stays neutral.
+  const getRankColor = (rank: number) =>
+    rank <= 3 ? "text-primary font-semibold" : "text-muted-foreground"
 
   const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1:
-        return <Trophy className="h-5 w-5 text-yellow-500" />
+        return <Trophy className="h-4 w-4 text-primary" aria-hidden="true" />
       case 2:
-        return <Medal className="h-5 w-5 text-gray-400" />
       case 3:
-        return <Medal className="h-5 w-5 text-amber-700" />
+        return <Medal className="h-4 w-4 text-primary" aria-hidden="true" />
       default:
         return null
     }
@@ -96,28 +86,33 @@ export default function LeaderboardsPage() {
     .map((player, index) => ({ ...player, rank: index + 1 }))
 
   return (
-    <div className="min-h-screen bg-white">
-      <header className="w-full bg-[#D41B2C] p-4 text-center shadow-md">
-        <h1 className="text-4xl font-bold text-white">All-Time Leaderboards</h1>
-      </header>
+    <div className="min-h-screen bg-background text-foreground">
+      <main className="container mx-auto max-w-5xl px-4 py-8 sm:py-12">
+        <header className="mb-8">
+          <h1 className="text-4xl font-bold tracking-tight">All-Time Leaderboards</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Top 100 NUGuessr players.</p>
+        </header>
 
-      <main className="container mx-auto px-4 py-8">
-        <Card className="shadow-xl">
-          <CardHeader className="pb-4">
+        <Card className="rounded-2xl border-border bg-card shadow-sm">
+          <CardHeader className="p-4 sm:p-6">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <CardTitle className="text-2xl font-bold">Top Players</CardTitle>
-              <div className="flex flex-col gap-4 md:flex-row md:items-center">
-                <div className="relative">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="relative w-full sm:w-64">
+                  <Search
+                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                    aria-hidden="true"
+                  />
                   <Input
                     placeholder="Search players..."
-                    className="pl-8"
+                    aria-label="Search players"
+                    className="h-11 rounded-lg bg-background pl-9"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
                 <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="h-11 w-full rounded-lg bg-background sm:w-[180px]" aria-label="Sort by">
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
                   <SelectContent>
@@ -129,40 +124,47 @@ export default function LeaderboardsPage() {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0 sm:p-6 sm:pt-0">
             {loading ? (
-              <p className="text-muted-foreground text-center py-8">Loading leaderboard...</p>
+              <p className="py-8 text-center text-sm text-muted-foreground">Loading leaderboard...</p>
             ) : error ? (
-              <p className="text-red-600 text-center py-8">Couldn&apos;t load the leaderboard: {error}</p>
+              <p className="py-8 text-center text-sm text-destructive">Couldn&apos;t load the leaderboard: {error}</p>
             ) : filteredData.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">
+              <p className="py-8 text-center text-sm text-muted-foreground">
                 No scores yet — be the first to play!
               </p>
             ) : (
-              <div className="rounded-md border">
-                <Table>
+              <div className="overflow-hidden rounded-lg border border-border bg-card">
+                <Table className="min-w-[520px]">
                   <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[100px]">Rank</TableHead>
-                      <TableHead>Player</TableHead>
-                      <TableHead className="text-right">High Score</TableHead>
-                      <TableHead className="text-right">Games Played</TableHead>
-                      <TableHead className="text-right">Avg Score</TableHead>
+                    <TableRow className="border-border bg-muted hover:bg-muted">
+                      <TableHead className="w-20 text-muted-foreground">Rank</TableHead>
+                      <TableHead className="text-muted-foreground">Player</TableHead>
+                      <TableHead className="text-right text-muted-foreground">High Score</TableHead>
+                      <TableHead className="text-right text-muted-foreground">Games</TableHead>
+                      <TableHead className="text-right text-muted-foreground">Avg Score</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredData.map((player) => (
-                      <TableRow key={player.id}>
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
+                      <TableRow
+                        key={player.id}
+                        className="border-border even:bg-muted/50 hover:bg-secondary/60"
+                      >
+                        <TableCell className="py-3">
+                          <div className="flex items-center gap-2 tabular-nums">
                             {getRankIcon(player.rank)}
                             <span className={getRankColor(player.rank)}>#{player.rank}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="font-semibold">{player.username}</TableCell>
-                        <TableCell className="text-right">{player.high_score.toLocaleString()}</TableCell>
-                        <TableCell className="text-right">{player.total_games}</TableCell>
-                        <TableCell className="text-right">{player.avg_score.toLocaleString()}</TableCell>
+                        <TableCell className="max-w-[200px] truncate py-3 font-medium">{player.username}</TableCell>
+                        <TableCell className="py-3 text-right font-semibold tabular-nums">
+                          {player.high_score.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="py-3 text-right tabular-nums">{player.total_games}</TableCell>
+                        <TableCell className="py-3 text-right tabular-nums">
+                          {player.avg_score.toLocaleString()}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
