@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import "@fontsource/open-sans";
 import "@fontsource/titillium-web";
-import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { MainNav } from "@/components/main-nav";
 import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/icons";
@@ -24,26 +24,35 @@ const steps = [
   },
 ];
 
+// Generate a random link with 5 unique random numbers (between 1 and 55).
+// Called on click, not during render: Math.random() during render produced a
+// different link on the server than on the client (hydration mismatch).
+function makeRandomLink() {
+  // Create an array of numbers from 1 to 55.
+  const numbers = Array.from({ length: 55 }, (_, i) => i + 1);
+  // Shuffle the numbers using the Fisher-Yates algorithm.
+  for (let i = numbers.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
+  }
+  // Take the first 5 numbers and join them with a hyphen.
+  const fiveNumbers = numbers.slice(0, 5);
+  return `/play/${fiveNumbers.join("-")}`;
+}
+
 export default function HomePage() {
-  // Generate a random link with 5 unique random numbers (between 1 and 55)
-  const randomLink = useMemo(() => {
-    // Create an array of numbers from 1 to 55.
-    const numbers = Array.from({ length: 55 }, (_, i) => i + 1);
-    // Shuffle the numbers using the Fisher-Yates algorithm.
-    for (let i = numbers.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
-    }
-    // Take the first 5 numbers and join them with a hyphen.
-    const fiveNumbers = numbers.slice(0, 5);
-    return `/play/${fiveNumbers.join("-")}`;
-  }, []);
+  const router = useRouter();
 
   // Function to reset game-related localStorage values.
   const resetGame = () => {
     localStorage.removeItem("score");
     localStorage.removeItem("processedRound");
     localStorage.removeItem("finalScore");
+  };
+
+  const startGame = () => {
+    resetGame();
+    router.push(makeRandomLink());
   };
 
   return (
@@ -76,13 +85,12 @@ export default function HomePage() {
             </div>
             <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
               <Button
-                asChild
+                type="button"
                 size="lg"
+                onClick={startGame}
                 className="h-12 rounded-lg px-8 text-base font-semibold"
               >
-                <Link href={randomLink} onClick={resetGame}>
-                  Test your skills!
-                </Link>
+                Test your skills!
               </Button>
               <Button
                 asChild
