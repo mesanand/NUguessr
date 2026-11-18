@@ -2,6 +2,8 @@
 
 import "@fontsource/titillium-web"
 import { SignInButton } from "@/components/signin-button"
+import { MainNav } from "@/components/main-nav"
+import { Icons } from "@/components/icons"
 
 // This whole page was commented out in the original repo — meaning the
 // file had no default export at all. Anything that routed here (including
@@ -12,14 +14,24 @@ import { SignInButton } from "@/components/signin-button"
 // Google OAuth call a second time.
 export default function SignInPage() {
   return (
-    <div className="flex flex-col items-center justify-center h-screen space-y-4">
-      <p
-        className="text-5xl font-[1000] text-black text-center px-4"
-        style={{ textShadow: "0 2px 4px rgba(0,0,0,0.5)" }}
-      >
-        Sign in to track your scores
-      </p>
-      <SignInButton />
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <MainNav />
+      <main className="flex flex-1 items-center justify-center px-4 py-12">
+        <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+          <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
+            <Icons.mapPin className="size-6" aria-hidden="true" />
+          </span>
+          <h1 className="mt-6 text-2xl font-bold">
+            Sign in to track your scores
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Save your results and see how you stack up on the leaderboards.
+          </p>
+          <div className="mt-8 flex justify-center">
+            <SignInButton />
+          </div>
+        </div>
+      </main>
     </div>
   )
 }
