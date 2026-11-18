@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { MainNav } from "@/components/main-nav";
 import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/icons";
+import { PLACE_COUNT } from "@/lib/places";
 
 const steps = [
   {
@@ -24,12 +25,12 @@ const steps = [
   },
 ];
 
-// Generate a random link with 5 unique random numbers (between 1 and 55).
+// Generate a random link with 5 unique random numbers (between 1 and PLACE_COUNT).
 // Called on click, not during render: Math.random() during render produced a
 // different link on the server than on the client (hydration mismatch).
 function makeRandomLink() {
-  // Create an array of numbers from 1 to 55.
-  const numbers = Array.from({ length: 55 }, (_, i) => i + 1);
+  // Create an array of numbers from 1 to PLACE_COUNT.
+  const numbers = Array.from({ length: PLACE_COUNT }, (_, i) => i + 1);
   // Shuffle the numbers using the Fisher-Yates algorithm.
   for (let i = numbers.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));

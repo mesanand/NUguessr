@@ -8,6 +8,7 @@ import { RotateCcw } from "lucide-react"
 import { SignInButton } from "@/components/signin-button"
 import { useState, useEffect, useMemo } from "react"
 import { useUser } from "../../../hooks/use-user"
+import { PLACE_COUNT } from "@/lib/places"
 
 const MAX_POSSIBLE_SCORE = 25000 // Maximum possible score for reference
 
@@ -24,9 +25,9 @@ export default function PlayFinishPage() {
 
   const scorePercentage = (finalScore / MAX_POSSIBLE_SCORE) * 100
 
-  // Generate a random round with 5 unique campus-location ids (1-55).
+  // Generate a random round with 5 unique campus-location ids (1-PLACE_COUNT).
   const randomLink = useMemo(() => {
-    const numbers = Array.from({ length: 55 }, (_, i) => i + 1)
+    const numbers = Array.from({ length: PLACE_COUNT }, (_, i) => i + 1)
     for (let i = numbers.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
       ;[numbers[i], numbers[j]] = [numbers[j], numbers[i]]

@@ -33,6 +33,9 @@ const SUPABASE_STORAGE_BUCKET = "images"
 
 const getSupabaseImageUrl = (path: string) => {
   if (!path) return "/placeholder.svg"
+  // Absolute URLs and root-relative paths (e.g. "/places/01.jpg", served from
+  // /public) are used as-is; anything else is a key in the Supabase bucket.
+  if (path.startsWith("/") || /^https?:\/\//.test(path)) return path
   if (!SUPABASE_PROJECT_ID) {
     console.error("Supabase URL is missing!")
     return "/placeholder.svg"
