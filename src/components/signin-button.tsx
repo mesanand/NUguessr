@@ -5,11 +5,33 @@ import { useUser } from "../../hooks/use-user"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "@/hooks/use-toast"
 import { Icons } from "@/components/icons"
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import { ProfileImage } from "./profile-image"
- 
+
+// useSearchParams() opts the component into client-side rendering during
+// static generation, so Next.js requires a Suspense boundary around any
+// component that calls it. Wrapping here means every call site of
+// <SignInButton /> gets this for free.
 export function SignInButton() {
+  return (
+    <Suspense
+      fallback={
+        <Button
+          className="text-white items-center bg-red-600 py-7 px-6 rounded-full text-2xl shadow-lg opacity-70"
+          type="button"
+          disabled
+        >
+          <Icons.loaderCircle className="mr-2 size-4 animate-spin" /> Log in
+        </Button>
+      }
+    >
+      <SignInButtonInner />
+    </Suspense>
+  )
+}
+
+function SignInButtonInner() {
     const { user } = useUser()
     const [isGoogleLoading, setIsGoogleLoading] = useState<boolean>(false)
     const supabase = createClient()

@@ -2,22 +2,12 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
 import "@fontsource/open-sans";
 import "@fontsource/titillium-web";
-import { useUser } from "../../hooks/use-user";
-import { createClient } from "@/lib/supabase/client";
-import { useState, useMemo } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useMemo } from "react";
 import { SignInButton } from "@/components/signin-button";
 
 export default function HomePage() {
-  const { user } = useUser();
-  const supabase = createClient();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const next = searchParams.get("next");
-
   // Generate a random link with 5 unique random numbers (between 1 and 55)
   const randomLink = useMemo(() => {
     // Create an array of numbers from 1 to 55.
