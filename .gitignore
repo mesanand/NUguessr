@@ -40,3 +40,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# places pipeline working data (only the published manifest is committed)
+/data/*
+!/data/places.manifest.json
+!/data/own/
+/data/own/*
+!/data/own/.gitkeep
+
+# playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
