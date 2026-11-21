@@ -37,7 +37,7 @@ Difficulty: 7 easy / 27 medium / 7 hard. Licenses: CC BY-SA 4.0 (23), CC BY 4.0 
 | 6 | Results show name, pins, distance, points, linked credit; `/credits` | ✅ | e2e asserts the name heading, points, a source link and a creativecommons.org link on every result; `/credits` renders all 41. |
 | 7 | ≥ 30 curated places live, spread out, placeholders removed | ⚠️ local only | 41 live on the local stack; placeholder files deleted from the repo. **Production still serves the 20 placeholders** until section 3 is done. |
 | 8 | `/admin/curate` admin-only | ✅ (local) | RLS tested with real admin/player users; non-admins redirected by middleware, blocked in page and in every server action. |
-| 9 | Docs updated; merged to `main` and pushed | ⚠️ partly | Docs done; `feat/real-photos` pushed. **Not merged to `main`** (merging deploys to production, which needs section 3 first). |
+| 9 | Docs updated; merged to `main` and pushed | ⚠️ partly | Docs done; `feat/real-photos` pushed and its Vercel preview build succeeded (`nuguessr-git-feat-real-photos-mesanands-projects.vercel.app`; it points at the production database, which doesn't have the new schema yet, so the game won't run there until section 3). **Not merged to `main`** (merging deploys to production, which needs section 3 first). |
 
 Two independent reviews were run (fresh agents with no context). All high/medium findings from the first were fixed and re-verified; see section 4 for the second.
 
