@@ -4,11 +4,11 @@ import Link from "next/link";
 import Image from "next/image";
 import "@fontsource/open-sans";
 import "@fontsource/titillium-web";
-import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { MainNav } from "@/components/main-nav";
 import { Button } from "@/components/ui/button";
 import { Icons } from "@/components/icons";
-import { PLACE_COUNT } from "@/lib/places";
+import { useStartGame } from "@/components/game/use-start-game";
 
 const steps = [
   {
@@ -25,36 +25,10 @@ const steps = [
   },
 ];
 
-// Generate a random link with 5 unique random numbers (between 1 and PLACE_COUNT).
-// Called on click, not during render: Math.random() during render produced a
-// different link on the server than on the client (hydration mismatch).
-function makeRandomLink() {
-  // Create an array of numbers from 1 to PLACE_COUNT.
-  const numbers = Array.from({ length: PLACE_COUNT }, (_, i) => i + 1);
-  // Shuffle the numbers using the Fisher-Yates algorithm.
-  for (let i = numbers.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [numbers[i], numbers[j]] = [numbers[j], numbers[i]];
-  }
-  // Take the first 5 numbers and join them with a hyphen.
-  const fiveNumbers = numbers.slice(0, 5);
-  return `/play/${fiveNumbers.join("-")}`;
-}
-
 export default function HomePage() {
-  const router = useRouter();
-
-  // Function to reset game-related localStorage values.
-  const resetGame = () => {
-    localStorage.removeItem("score");
-    localStorage.removeItem("processedRound");
-    localStorage.removeItem("finalScore");
-  };
-
-  const startGame = () => {
-    resetGame();
-    router.push(makeRandomLink());
-  };
+  // Games are created on the server (start_game RPC); the URL is just the
+  // game id, so it reveals nothing about the rounds.
+  const { start, pending, error } = useStartGame();
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-background text-foreground">
@@ -88,9 +62,12 @@ export default function HomePage() {
               <Button
                 type="button"
                 size="lg"
-                onClick={startGame}
+                onClick={start}
+                disabled={pending}
+                aria-busy={pending}
                 className="h-12 rounded-lg px-8 text-base font-semibold"
               >
+                {pending && <Loader2 className="animate-spin" aria-hidden="true" />}
                 Test your skills!
               </Button>
               <Button
@@ -105,6 +82,11 @@ export default function HomePage() {
                 </Link>
               </Button>
             </div>
+            {error && (
+              <p role="alert" className="text-sm text-destructive">
+                {error}
+              </p>
+            )}
           </div>
 
           <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-border bg-muted shadow-sm">
@@ -141,6 +123,18 @@ export default function HomePage() {
           </ol>
         </section>
       </main>
+
+      <footer className="border-t border-border bg-card">
+        <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-2 px-4 py-4 text-sm text-muted-foreground">
+          <span>Photos are used under their original licenses.</span>
+          <Link
+            href="/credits"
+            className="inline-flex min-h-11 items-center rounded-lg px-2 font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Photo credits
+          </Link>
+        </div>
+      </footer>
     </div>
   );
 }

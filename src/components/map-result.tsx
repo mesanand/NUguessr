@@ -1,142 +1,151 @@
 "use client"
 
-import { MapContainer, TileLayer, Marker, Polyline } from "react-leaflet"
+// Round results view. Client-only (Leaflet): only imported from the game
+// component, which is loaded with next/dynamic { ssr: false }.
+// Every number shown here comes from the server (SubmitResult / RoundResult);
+// nothing is recomputed in the browser.
+
+import Image from "next/image"
+import { MapContainer, Marker, Polyline, TileLayer } from "react-leaflet"
 import "leaflet/dist/leaflet.css"
-import { Icon } from "leaflet"
+import { ArrowRight, Clock, Loader2, PartyPopper } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Card, CardContent } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { ArrowRight, PartyPopper } from "lucide-react"
-import { useEffect, useState } from "react"
+import { CAMPUS_MAX_ZOOM } from "@/lib/campus"
+import { MAX_POINTS_PER_ROUND } from "@/lib/scoring"
+import type { RoundResult } from "@/lib/game-types"
+import { actualIcon, guessIcon } from "@/components/game/leaflet-icons"
+import { PhotoCredit } from "@/components/game/photo-credit"
+import { cleanText } from "@/components/game/credit-utils"
+
+const OSM_CARTO_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
 
 interface MapResultProps {
-  guessCoords: [number, number]
-  actualCoords: [number, number]
-  onNextRound: () => void
+  result: RoundResult
+  imageUrl: string
+  /** 1-based round number */
   round: number
-  timeout: boolean
-  notes: string
+  totalRounds: number
+  /** Server running total after this round */
+  totalSoFar: number
+  isLastRound: boolean
+  onNext: () => void
+  /** "View results" is finishing the game on the server */
+  pending?: boolean
+  error?: string | null
 }
 
-// Calculate distance between two points using the Haversine formula
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
-  const R = 3959 // Earth's radius in miles
-  const dLat = ((lat2 - lat1) * Math.PI) / 180
-  const dLon = ((lon2 - lon1) * Math.PI) / 180
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2)
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  return Math.round(R * c * 1760)
-}
+export default function MapResult({
+  result,
+  imageUrl,
+  round,
+  totalRounds,
+  totalSoFar,
+  isLastRound,
+  onNext,
+  pending = false,
+  error = null,
+}: MapResultProps) {
+  const { actual, guess, points, distanceYards } = result
+  const timedOut = guess === null
+  const isPerfect = !timedOut && points >= MAX_POINTS_PER_ROUND
+  const name = cleanText(result.name)
+  const notes = result.notes?.trim() || null
 
-// Calculate points based on distance (max 5000 points at 0 distance)
-function calculatePoints(distance: number, timeout: boolean) {
-  if (timeout) {
-    return 0
-  }
-  if (distance < 12) {
-    return 5000
-  } else {
-    return Math.max(0, Math.round(5000 * (1 - distance / 500)))
-  }
-}
+  const actualPos: [number, number] = [actual.lat, actual.lng]
+  const guessPos: [number, number] | null = guess ? [guess.lat, guess.lng] : null
 
-export default function MapResult({ guessCoords, actualCoords, onNextRound, round, timeout, notes }: MapResultProps) {
-  const distance = calculateDistance(guessCoords[0], guessCoords[1], actualCoords[0], actualCoords[1])
-  const points = calculatePoints(distance, timeout)
-  
-  // Initialize score from local storage if available; otherwise start at 0.
-  const [score, setScore] = useState(() => Number(localStorage.getItem("score")) || 0)
-
-  // When this component mounts (or when round/points change), update the score only if
-  // we have not already processed this round. We use a "processedRound" key in localStorage
-  // to keep track.
-  useEffect(() => {
-    const processedRound = Number(localStorage.getItem("processedRound") || 0)
-    if (processedRound < round) {
-      const previousScore = Number(localStorage.getItem("score")) || 0
-      const newScore = previousScore + points
-      setScore(newScore)
-      localStorage.setItem("score", newScore.toString())
-      localStorage.setItem("processedRound", round.toString())
-      
-      // If this is the final round, also store the final score.
-      if (round === 5) {
-        localStorage.setItem("finalScore", newScore.toString())
+  const mapView = guessPos
+    ? {
+        bounds: [
+          [Math.min(actualPos[0], guessPos[0]), Math.min(actualPos[1], guessPos[1])],
+          [Math.max(actualPos[0], guessPos[0]), Math.max(actualPos[1], guessPos[1])],
+        ] as [[number, number], [number, number]],
+        boundsOptions: { padding: [50, 50] as [number, number], maxZoom: 18 },
       }
-    }
-  }, [round, points])
-
-  const customIcon = new Icon({
-    iconUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png",
-    iconRetinaUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png",
-    shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-  })
-
-  const flagIcon = new Icon({
-    iconUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
-    iconRetinaUrl: "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
-    shadowUrl: "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png",
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-  });
-
-  // Compute bounds so both markers are visible
-  const latMin = Math.min(guessCoords[0], actualCoords[0])
-  const lngMin = Math.min(guessCoords[1], actualCoords[1])
-  const latMax = Math.max(guessCoords[0], actualCoords[0])
-  const lngMax = Math.max(guessCoords[1], actualCoords[1])
-  const bounds: [[number, number], [number, number]] = [
-    [latMin, lngMin],
-    [latMax, lngMax],
-  ]
-
-  // A guess inside the 5000-point radius counts as "correct".
-  const isPerfect = !timeout && points === 5000
+    : { center: actualPos, zoom: 17 }
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-background text-foreground">
+    <div className="flex min-h-[100dvh] flex-col bg-background text-foreground">
       {/* Header bar, matching the gameplay screen */}
       <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border bg-card px-4 sm:px-6">
-        <h1 className="text-xl font-semibold">Round {round} results</h1>
+        <h1 className="text-xl font-semibold">
+          Round {round} <span className="text-muted-foreground">/ {totalRounds}</span>
+        </h1>
         <span className="text-sm text-muted-foreground tabular-nums">
-          Total: {score.toLocaleString()} pts
+          Total: {totalSoFar.toLocaleString()} pts
         </span>
       </header>
 
-      <main className="flex-1 container mx-auto flex flex-col gap-6 px-4 py-6">
-        {/* Map and Fun Fact */}
+      <main className="container mx-auto flex flex-1 flex-col gap-6 px-4 py-6">
+        <h2 className="text-2xl font-bold tracking-tight sm:text-4xl">
+          {name ? `It was ${name}` : "Here's where it was"}
+        </h2>
+
         <div className="flex flex-col gap-4 lg:flex-row">
-          <div className="h-[45vh] min-h-[280px] flex-1 overflow-hidden rounded-2xl border border-border shadow-sm lg:h-[60vh]">
-            <MapContainer
-              bounds={bounds}
-              boundsOptions={{ padding: [50, 50] }}
-              className="w-full h-full"
-            >
-              <TileLayer
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              />
-              <Marker position={guessCoords} icon={customIcon} />
-              <Marker position={actualCoords} icon={flagIcon} />
-              <Polyline positions={[guessCoords, actualCoords]} dashArray={[10, 10]} color="#1f1e1b" weight={4} />
-            </MapContainer>
+          {/* Results map */}
+          <div className="flex flex-1 flex-col gap-2">
+            <div className="h-[45vh] min-h-[280px] overflow-hidden rounded-2xl border border-border shadow-sm lg:h-[60vh]">
+              <MapContainer {...mapView} maxZoom={CAMPUS_MAX_ZOOM} className="h-full w-full">
+                <TileLayer
+                  url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                  attribution={OSM_CARTO_ATTRIBUTION}
+                  subdomains="abcd"
+                  maxZoom={CAMPUS_MAX_ZOOM}
+                />
+                {guessPos && (
+                  <Polyline
+                    positions={[guessPos, actualPos]}
+                    pathOptions={{ color: "#1f1e1b", weight: 4, dashArray: "10 10" }}
+                  />
+                )}
+                {guessPos && <Marker position={guessPos} icon={guessIcon} />}
+                <Marker position={actualPos} icon={actualIcon} />
+              </MapContainer>
+            </div>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+              <span className="inline-flex items-center gap-2">
+                <span className="block size-3 rounded-full bg-primary ring-2 ring-primary/30" aria-hidden="true" />
+                Actual location
+              </span>
+              {guessPos && (
+                <span className="inline-flex items-center gap-2">
+                  <Image src="/marker-icon.png" alt="" aria-hidden="true" width={10} height={16} unoptimized />
+                  Your guess
+                </span>
+              )}
+            </div>
           </div>
-          {notes && (
-            <Card className="rounded-2xl border-border shadow-sm lg:w-72 lg:self-start">
-              <CardContent className="max-h-60 space-y-2 overflow-y-auto p-4">
-                <h3 className="text-xl font-semibold">Fun fact</h3>
-                <p className="whitespace-pre-wrap text-base text-muted-foreground">{notes}</p>
+
+          {/* Photo, credit, fun fact */}
+          <div className="flex flex-col gap-4 lg:w-80">
+            <Card className="overflow-hidden rounded-2xl border-border shadow-sm">
+              <div className="relative aspect-[4/3] w-full bg-muted">
+                <Image
+                  src={imageUrl}
+                  alt={name ? `Photo of ${name}` : "Round photo"}
+                  fill
+                  unoptimized
+                  sizes="(min-width: 1024px) 320px, 100vw"
+                  className="object-cover"
+                />
+              </div>
+              <CardContent className="p-3">
+                <PhotoCredit credit={result.credit} />
               </CardContent>
             </Card>
-          )}
+            {notes && (
+              <Card className="rounded-2xl border-border shadow-sm">
+                <CardContent className="max-h-60 space-y-2 overflow-y-auto p-4">
+                  <h3 className="text-xl font-semibold">Fun fact</h3>
+                  <p className="whitespace-pre-wrap text-base text-muted-foreground">{notes}</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
 
         {/* Score feedback */}
@@ -148,33 +157,56 @@ export default function MapResult({ guessCoords, actualCoords, onNextRound, roun
                 Spot on! Full points.
               </span>
             )}
-            <div className={cn("text-4xl font-bold tracking-tight tabular-nums", isPerfect ? "text-accent-foreground" : "text-primary")}>
+            <div
+              className={cn(
+                "text-4xl font-bold tracking-tight tabular-nums",
+                isPerfect ? "text-accent-foreground" : "text-primary"
+              )}
+            >
               {points.toLocaleString()} points
             </div>
             <div className="w-full">
-              <Progress value={(points / 5000) * 100} className={cn("h-2", isPerfect ? "bg-accent" : "bg-secondary")} />
+              <Progress
+                value={(points / MAX_POINTS_PER_ROUND) * 100}
+                aria-label={`${points} of ${MAX_POINTS_PER_ROUND} points`}
+                className={cn("h-2", isPerfect ? "bg-accent" : "bg-secondary")}
+              />
             </div>
             <p className="text-base text-muted-foreground">
-              {timeout ? (
-                "Time's up!"
-              ) : (
+              {timedOut ? (
+                <span className="inline-flex items-center gap-2">
+                  <Clock className="size-4" aria-hidden="true" />
+                  Time&apos;s up — 0 points
+                </span>
+              ) : distanceYards !== null ? (
                 <>
                   Your guess was{" "}
-                  <span className="font-semibold text-primary">{distance} yards</span> from the correct location.
+                  <span className="font-semibold text-primary">
+                    {distanceYards.toLocaleString()} {distanceYards === 1 ? "yard" : "yards"}
+                  </span>{" "}
+                  from the correct location.
                 </>
-              )}
+              ) : null}
             </p>
             <p className="text-sm text-muted-foreground tabular-nums">
-              Total score: {score.toLocaleString()} points
+              Total score: {totalSoFar.toLocaleString()} points
             </p>
 
-            {/* Next Round Button */}
+            {error && (
+              <p role="alert" className="text-sm text-destructive">
+                {error}
+              </p>
+            )}
+
             <Button
-              onClick={onNextRound}
+              type="button"
+              onClick={onNext}
+              disabled={pending}
+              aria-busy={pending}
               className="h-12 w-full rounded-lg text-base font-semibold sm:w-auto sm:px-8"
             >
-              {round === 5 ? "View results" : "Start next round"}
-              <ArrowRight />
+              {isLastRound ? "View results" : "Start next round"}
+              {pending ? <Loader2 className="animate-spin" /> : <ArrowRight />}
             </Button>
           </CardContent>
         </Card>

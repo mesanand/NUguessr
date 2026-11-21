@@ -54,7 +54,7 @@ function SignInButtonInner() {
         if (error) {
           throw error
         }
-      } catch (error) {
+      } catch {
         toast({
           title: "Please try again.",
           description: "There was an error logging in with Google.",

@@ -1,11 +1,12 @@
 "use client"
 
 import dynamic from "next/dynamic"
+import { useParams } from "next/navigation"
 
 // The game screen uses Leaflet, which touches `window` as soon as it is
 // imported. Load it client-only so the server render doesn't crash with
-// "ReferenceError: window is not defined" (which made /play/[hash] a 500).
-const PlayGame = dynamic(() => import("./play-game"), {
+// "ReferenceError: window is not defined" (which made /play/[id] a 500).
+const PlayGame = dynamic(() => import("@/components/game/play-game"), {
   ssr: false,
   loading: () => (
     <div className="flex h-[100dvh] flex-col bg-background text-foreground">
@@ -20,5 +21,8 @@ const PlayGame = dynamic(() => import("./play-game"), {
 })
 
 export default function PlayPage() {
-  return <PlayGame />
+  const params = useParams<{ gameId: string }>()
+  const gameId = typeof params?.gameId === "string" ? params.gameId : ""
+  // key: a different game id remounts the game with fresh state.
+  return <PlayGame key={gameId} gameId={gameId} />
 }

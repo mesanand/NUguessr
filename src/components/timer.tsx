@@ -1,35 +1,46 @@
 "use client"
 
-import React from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Clock } from "lucide-react"
-import { cn } from "../lib/utils"
+import { cn } from "@/lib/utils"
 
 interface TimerProps {
   seconds: number
+  /** Called exactly once when the countdown reaches zero (unless stopped). */
   onComplete?: () => void
+  /** Freeze the display and never fire onComplete (e.g. while a guess is being submitted). */
+  stopped?: boolean
   className?: string
 }
 
-export default function Timer({ seconds, onComplete, className }: TimerProps) {
+/**
+ * Countdown based on a fixed deadline (not a tick counter), so a throttled
+ * background tab still expires on time. Remount with a new `key` per round.
+ */
+export default function Timer({ seconds, onComplete, stopped = false, className }: TimerProps) {
   const [timeLeft, setTimeLeft] = useState(seconds)
+  const deadlineRef = useRef(Date.now() + seconds * 1000)
+  const firedRef = useRef(false)
+  const onCompleteRef = useRef(onComplete)
+  onCompleteRef.current = onComplete
 
   useEffect(() => {
-    if (timeLeft <= 0) {
-      onComplete?.()
-      return
+    if (stopped) return
+    const tick = () => {
+      const left = Math.max(0, Math.ceil((deadlineRef.current - Date.now()) / 1000))
+      setTimeLeft(left)
+      if (left <= 0 && !firedRef.current) {
+        firedRef.current = true
+        onCompleteRef.current?.()
+      }
     }
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => prev - 1)
-    }, 1000)
-
-    return () => clearInterval(timer)
-  }, [timeLeft, onComplete])
+    tick()
+    const id = setInterval(tick, 250)
+    return () => clearInterval(id)
+  }, [stopped])
 
   const minutes = Math.floor(timeLeft / 60)
   const remainingSeconds = timeLeft % 60
-
   const formattedTime = `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`
 
   // Last 10 seconds: switch to the primary (tomato) treatment as a warning.

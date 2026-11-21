@@ -38,7 +38,10 @@ function normalizeGame(raw: unknown): GameState {
 function errorMessage(error: { message?: string } | null | undefined): string {
   const msg = error?.message ?? "unknown_error"
   // Postgres exceptions raised by the RPCs use short codes as messages.
-  return msg.replace(/^.*?(no_places|game_not_found|not_your_game|game_finished|round_out_of_order|round_out_of_range|bad_guess|game_incomplete).*$/s, "$1")
+  const known = msg.match(
+    /no_places|game_not_found|not_your_game|game_finished|round_out_of_order|round_out_of_range|bad_guess|game_incomplete/
+  )
+  return known ? known[0] : msg
 }
 
 /** Start a new 5-round game. Returns the game id and the rounds' photo URLs only. */

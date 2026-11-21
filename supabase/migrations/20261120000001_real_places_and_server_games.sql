@@ -148,6 +148,13 @@ $$;
 revoke all on function public.is_admin() from public;
 grant execute on function public.is_admin() to anon, authenticated;
 
+-- Admins can list all players on /admin (is_admin is security definer, so
+-- this policy doesn't recurse through users RLS).
+drop policy if exists "Admins can read all users" on public.users;
+create policy "Admins can read all users"
+  on public.users for select to authenticated
+  using ((select public.is_admin()));
+
 -- Admin-only writes (curation UI uses the admin's own session).
 drop policy if exists "Admins manage places" on public.places;
 create policy "Admins manage places"
