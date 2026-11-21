@@ -18,7 +18,7 @@ export interface Bounds {
 export const CAMPUS_BOUNDS: Bounds = {
   south: 42.334,
   west: -71.096,
-  north: 42.343,
+  north: 42.3445,
   east: -71.083,
 }
 
