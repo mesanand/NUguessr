@@ -1,14 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { createServerClient } from "@supabase/ssr"
- 
-import { getUserRole } from "./../get-user-role"
- 
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   })
- 
-  // Create a Supabase client
+
+  // Middleware gets its own client bound to the request/response cookies.
+  // (The cookie helpers in ./server.ts use next/headers and must not be
+  // called from middleware.)
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -18,7 +18,7 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           )
           supabaseResponse = NextResponse.next({
@@ -31,44 +31,52 @@ export async function updateSession(request: NextRequest) {
       },
     }
   )
- 
-  // Get the current user from Supabase
+
+  // getUser() revalidates the session with Supabase Auth (and refreshes it).
   const {
     data: { user },
   } = await supabase.auth.getUser()
- 
-  // Get the user's role using the custom getUserRole function
-  const role = await getUserRole()
- 
-  // Redirect non-admin users trying to access admin pages to the home page
-  if (
-    user &&
-    role !== "admin" &&
-    request.nextUrl.pathname.startsWith("/admin")
-  ) {
-    const url = request.nextUrl.clone()
-    url.pathname = "/"
-    return NextResponse.redirect(url)
+
+  const { pathname } = request.nextUrl
+
+  // Redirect non-admin users trying to access admin pages to the home page.
+  // The admin pages and every admin server action re-check with requireAdmin().
+  if (user && pathname.startsWith("/admin")) {
+    const { data: isAdmin, error } = await supabase.rpc("is_admin")
+    if (error || isAdmin !== true) {
+      const url = request.nextUrl.clone()
+      url.pathname = "/"
+      url.search = ""
+      return withCookies(NextResponse.redirect(url), supabaseResponse)
+    }
   }
- 
+
   // Redirect unauthenticated users to sign-in page
   if (
     !user &&
-    !request.nextUrl.pathname.startsWith("/signin") &&
-    !request.nextUrl.pathname.startsWith("/auth")
+    !pathname.startsWith("/signin") &&
+    !pathname.startsWith("/auth")
   ) {
     const url = request.nextUrl.clone()
     url.pathname = "/signin"
-    url.searchParams.set("next", request.nextUrl.pathname)
-    return NextResponse.redirect(url)
+    url.search = ""
+    url.searchParams.set("next", pathname)
+    return withCookies(NextResponse.redirect(url), supabaseResponse)
   }
- 
+
   // Redirect authenticated users attempting to access the sign-in page to the home page
-  if (user && request.nextUrl.pathname.startsWith("/signin")) {
+  if (user && pathname.startsWith("/signin")) {
     const url = request.nextUrl.clone()
     url.pathname = "/"
-    return NextResponse.redirect(url)
+    url.search = ""
+    return withCookies(NextResponse.redirect(url), supabaseResponse)
   }
- 
+
   return supabaseResponse
+}
+
+/** Carry refreshed auth cookies over to a redirect response. */
+function withCookies(response: NextResponse, from: NextResponse) {
+  from.cookies.getAll().forEach((cookie) => response.cookies.set(cookie))
+  return response
 }

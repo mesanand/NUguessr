@@ -1,44 +1,29 @@
 import "server-only"
- 
-import { JWTPayload, jwtVerify } from "jose"
- 
+
 import { createClient } from "@/lib/supabase/server"
- 
-// Extend the JWTPayload type to include Supabase-specific metadata
-type SupabaseJwtPayload = JWTPayload & {
-  app_metadata: {
-    role: string
-  }
-}
- 
-export async function getUserRole() {
-  // Create a Supabase client for server-side operations
+
+export type UserRole = "admin" | "player"
+
+/**
+ * Role of the signed-in user: "admin" when the database's `is_admin()` says so,
+ * "player" for any other signed-in user, undefined when signed out.
+ *
+ * Uses `auth.getUser()` (revalidated with Supabase Auth) rather than trusting
+ * the session cookie, and asks Postgres instead of verifying the JWT locally,
+ * so no SUPABASE_JWT_SECRET is needed.
+ */
+export async function getUserRole(): Promise<UserRole | undefined> {
   const supabase = await createClient()
- 
-  // Retrieve the current session
+
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
- 
-  let role
- 
-  if (session) {
-    // Extract the access token from the session
-    const token = session.access_token
- 
-    try {
-      // Encode the JWT secret for verification
-      const secret = new TextEncoder().encode(process.env.SUPABASE_JWT_SECRET)
- 
-      // Verify the JWT token and extract the payload
-      const { payload } = await jwtVerify<SupabaseJwtPayload>(token, secret)
- 
-      // Extract the role from the app_metadata in the payload
-      role = payload.app_metadata.role
-    } catch (error) {
-      console.error("Failed to verify token:", error)
-    }
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return undefined
+
+  const { data, error } = await supabase.rpc("is_admin")
+  if (error) {
+    console.error("is_admin check failed:", error.message)
+    return "player"
   }
- 
-  return role
+  return data === true ? "admin" : "player"
 }
