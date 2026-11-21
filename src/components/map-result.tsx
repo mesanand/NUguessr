@@ -6,7 +6,7 @@
 // nothing is recomputed in the browser.
 
 import Image from "next/image"
-import { MapContainer, Marker, Polyline, TileLayer } from "react-leaflet"
+import { MapContainer, Marker, Polyline } from "react-leaflet"
 import "leaflet/dist/leaflet.css"
 import { ArrowRight, Clock, Loader2, PartyPopper } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -19,9 +19,7 @@ import type { RoundResult } from "@/lib/game-types"
 import { actualIcon, guessIcon } from "@/components/game/leaflet-icons"
 import { PhotoCredit } from "@/components/game/photo-credit"
 import { cleanText } from "@/components/game/credit-utils"
-
-const OSM_CARTO_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+import CampusBasemap, { BASEMAP_BACKGROUND } from "@/components/game/campus-basemap"
 
 interface MapResultProps {
   result: RoundResult
@@ -89,13 +87,16 @@ export default function MapResult({
           {/* Results map */}
           <div className="flex flex-1 flex-col gap-2">
             <div className="h-[45vh] min-h-[280px] overflow-hidden rounded-2xl border border-border shadow-sm lg:h-[60vh]">
-              <MapContainer {...mapView} maxZoom={CAMPUS_MAX_ZOOM} className="h-full w-full">
-                <TileLayer
-                  url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-                  attribution={OSM_CARTO_ATTRIBUTION}
-                  subdomains="abcd"
-                  maxZoom={CAMPUS_MAX_ZOOM}
-                />
+              <MapContainer
+                {...mapView}
+                maxZoom={CAMPUS_MAX_ZOOM}
+                preferCanvas
+                className="h-full w-full"
+                style={{ background: BASEMAP_BACKGROUND }}
+              >
+                {/* Same self-hosted campus drawing as the guess map (no tile
+                    server dependency); the place name is shown above the map. */}
+                <CampusBasemap />
                 {guessPos && (
                   <Polyline
                     positions={[guessPos, actualPos]}
@@ -176,7 +177,7 @@ export default function MapResult({
               {timedOut ? (
                 <span className="inline-flex items-center gap-2">
                   <Clock className="size-4" aria-hidden="true" />
-                  Time&apos;s up — 0 points
+                  Time&apos;s up â€” 0 points
                 </span>
               ) : distanceYards !== null ? (
                 <>

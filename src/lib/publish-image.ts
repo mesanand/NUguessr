@@ -26,9 +26,36 @@ export type ProcessedImage = { buffer: Buffer; width: number; height: number }
 /** Crop rectangle as fractions (0..1) of the auto-oriented image. */
 export type CropFractions = { left: number; top: number; width: number; height: number }
 
+/**
+ * Blur rectangles (fractions of the image AFTER cropping) — used to hide small
+ * readable text that names the place (a nameplate, an address number, a
+ * distant station sign) without throwing the whole photo away.
+ */
+async function redactRegions(input: Buffer, regions: CropFractions[]): Promise<Buffer> {
+  const oriented = await sharp(input, { failOn: "error" }).rotate().toBuffer({ resolveWithObject: true })
+  const { width: W, height: H } = oriented.info
+  const overlays: sharp.OverlayOptions[] = []
+  for (const r of regions) {
+    const left = Math.max(0, Math.floor(r.left * W))
+    const top = Math.max(0, Math.floor(r.top * H))
+    const width = Math.max(8, Math.min(W - left, Math.ceil(r.width * W)))
+    const height = Math.max(8, Math.min(H - top, Math.ceil(r.height * H)))
+    // Pixelate (downscale hard, upscale back) then blur: text can't be recovered.
+    const block = Math.max(2, Math.round(Math.min(width, height) / 6))
+    const patch = await sharp(oriented.data)
+      .extract({ left, top, width, height })
+      .resize(Math.max(1, Math.round(width / block)), Math.max(1, Math.round(height / block)), { kernel: "nearest" })
+      .resize(width, height, { kernel: "cubic" })
+      .blur(Math.max(3, block / 2))
+      .toBuffer()
+    overlays.push({ input: patch, left, top })
+  }
+  return sharp(oriented.data).composite(overlays).toBuffer()
+}
+
 export async function processImage(
   input: Buffer,
-  opts: { crop?: CropFractions | null } = {}
+  opts: { crop?: CropFractions | null; redact?: CropFractions[] | null } = {}
 ): Promise<ProcessedImage> {
   let source = input
   if (opts.crop) {
@@ -43,6 +70,7 @@ export async function processImage(
     if (width < 200 || height < 200) throw new Error(`crop too small: ${width}x${height}`)
     source = await sharp(oriented.data).extract({ left, top, width, height }).toBuffer()
   }
+  if (opts.redact?.length) source = await redactRegions(source, opts.redact)
   const { data, info } = await sharp(source, { failOn: "error" })
     .rotate()
     .resize({

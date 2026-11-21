@@ -20,27 +20,17 @@ import {
 } from "@/lib/campus"
 import type { LatLng } from "@/lib/game-types"
 import { guessIcon } from "./leaflet-icons"
+import CampusBasemap, { BASEMAP_BACKGROUND } from "./campus-basemap"
 
-const OSM_CARTO_ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-
-const BASE_LAYERS = {
-  map: {
-    url: "https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png",
-    attribution: OSM_CARTO_ATTRIBUTION,
-    subdomains: "abcd",
-    maxNativeZoom: 20,
-  },
-  satellite: {
-    url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-    attribution:
-      "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community",
-    subdomains: "",
-    maxNativeZoom: 19,
-  },
+// "map" = our own label-free campus drawing (see campus-basemap.tsx);
+// "satellite" = Esri World Imagery, which has no labels.
+const SATELLITE = {
+  url: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+  attribution: "Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community",
+  maxNativeZoom: 19,
 } as const
 
-type BaseLayer = keyof typeof BASE_LAYERS
+type BaseLayer = "map" | "satellite"
 
 const MAX_BOUNDS = paddedBounds()
 
@@ -87,7 +77,6 @@ export default function GuessMap({ onSubmit, submitting }: GuessMapProps) {
     }
   }, [])
 
-  const layer = BASE_LAYERS[baseLayer]
   const canGuess = isExpanded && marker !== null && !submitting
 
   const handleSubmit = () => {
@@ -137,16 +126,20 @@ export default function GuessMap({ onSubmit, submitting }: GuessMapProps) {
           maxZoom={CAMPUS_MAX_ZOOM}
           maxBounds={MAX_BOUNDS}
           maxBoundsViscosity={1}
+          preferCanvas
           className="h-full w-full"
+          style={{ background: BASEMAP_BACKGROUND }}
         >
-          <TileLayer
-            key={baseLayer}
-            url={layer.url}
-            attribution={layer.attribution}
-            subdomains={layer.subdomains || "abc"}
-            maxNativeZoom={layer.maxNativeZoom}
-            maxZoom={CAMPUS_MAX_ZOOM}
-          />
+          {baseLayer === "satellite" ? (
+            <TileLayer
+              url={SATELLITE.url}
+              attribution={SATELLITE.attribution}
+              maxNativeZoom={SATELLITE.maxNativeZoom}
+              maxZoom={CAMPUS_MAX_ZOOM}
+            />
+          ) : (
+            <CampusBasemap />
+          )}
           <MapClickHandler onClick={(ll) => setMarker({ lat: ll.lat, lng: ll.lng })} />
           {marker && <Marker position={[marker.lat, marker.lng]} icon={guessIcon} />}
           <MapResizeHandler trigger={isExpanded} />

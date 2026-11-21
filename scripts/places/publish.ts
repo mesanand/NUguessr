@@ -50,6 +50,8 @@ export interface SelectedPlace {
   heading: number | null
   /** Optional crop (fractions of the oriented image) used to remove name signs. */
   crop?: { left: number; top: number; width: number; height: number } | null
+  /** Optional regions (fractions of the cropped image) to blur, hiding small name text. */
+  redact?: { left: number; top: number; width: number; height: number }[] | null
 }
 
 interface PublishedRecord {
@@ -202,6 +204,36 @@ function validateSelected(raw: unknown): SelectedPlace[] {
     if (typeof r.lng !== "number" || Math.abs(r.lng) > 180) problems.push("lng")
     const difficulty = r.difficulty == null ? null : Number(r.difficulty)
     if (difficulty != null && ![1, 2, 3].includes(difficulty)) problems.push("difficulty")
+    // A crop removes a name sign; silently dropping it would publish a giveaway.
+    let crop: SelectedPlace["crop"] = null
+    if (r.crop != null) {
+      const c = r.crop as Record<string, unknown>
+      const vals = [c.left, c.top, c.width, c.height]
+      if (
+        vals.every((v) => typeof v === "number" && v >= 0 && v <= 1) &&
+        (c.left as number) + (c.width as number) <= 1.0001 &&
+        (c.top as number) + (c.height as number) <= 1.0001 &&
+        (c.width as number) > 0.2 &&
+        (c.height as number) > 0.2
+      ) {
+        crop = { left: c.left as number, top: c.top as number, width: c.width as number, height: c.height as number }
+      } else {
+        problems.push("crop")
+      }
+    }
+    let redact: SelectedPlace["redact"] = null
+    if (r.redact != null) {
+      const list = Array.isArray(r.redact) ? (r.redact as Record<string, unknown>[]) : null
+      const ok =
+        list?.every(
+          (c) =>
+            [c.left, c.top, c.width, c.height].every((v) => typeof v === "number" && v >= 0 && v <= 1) &&
+            (c.left as number) + (c.width as number) <= 1.0001 &&
+            (c.top as number) + (c.height as number) <= 1.0001
+        ) ?? false
+      if (ok) redact = list!.map((c) => ({ left: c.left as number, top: c.top as number, width: c.width as number, height: c.height as number }))
+      else problems.push("redact")
+    }
     if (problems.length) {
       console.warn(`[publish] skipping selected[${i}]: invalid ${problems.join(", ")}`)
       return
@@ -220,6 +252,8 @@ function validateSelected(raw: unknown): SelectedPlace[] {
       lat: r.lat as number,
       lng: r.lng as number,
       heading: typeof r.heading === "number" ? r.heading : null,
+      crop,
+      redact,
     }
     if (seen.has(keyOf(place))) {
       console.warn(`[publish] skipping duplicate ${keyOf(place)}`)
@@ -444,7 +478,7 @@ async function main(): Promise<void> {
         } else {
           await politeGap(p.image_remote_url)
           const raw = await fetchImage(p.image_remote_url)
-          out = await processImage(raw, { crop: p.crop ?? null })
+          out = await processImage(raw, { crop: p.crop ?? null, redact: p.redact ?? null })
           await assertNoMetadata(out.buffer)
           imagePath = newImagePath()
         }

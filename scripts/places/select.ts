@@ -1,5 +1,5 @@
 /**
- * places:select Ã¢â‚¬â€ turn curation decisions into the final publish list.
+ * places:select ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â turn curation decisions into the final publish list.
  *
  * Reads data/candidates.json + data/curation/batch-*.json (CurationDecision[])
  * and writes data/selected.json for places:publish.
@@ -34,7 +34,8 @@ const AREA_CAPS: { area: string; match: RegExp; cap: number }[] = [
 ]
 const DEFAULT_CAP = 3
 
-type Decision = CurationDecision & { crop?: { left: number; top: number; width: number; height: number } | null }
+type Rect = { left: number; top: number; width: number; height: number }
+type Decision = CurationDecision & { crop?: Rect | null; redact?: Rect[] | null }
 
 const key = (x: { source: string; source_id: string }) => `${x.source}:${x.source_id}`
 
@@ -45,6 +46,12 @@ function meters(a: { lat: number; lng: number }, b: { lat: number; lng: number }
   const dLng = (b.lng - a.lng) * r
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) ** 2
   return 2 * R * Math.asin(Math.sqrt(h))
+}
+
+/** CC licenses require indicating changes: "CC BY-SA 4.0 (cropped, text blurred)". */
+function editNote(license: string, d: Decision): string {
+  const edits = [d.crop ? "cropped" : null, d.redact?.length ? "text blurred" : null].filter(Boolean)
+  return edits.length ? `${license} (${edits.join(", ")})` : license
 }
 
 const normName = (n: string | null) => (n ?? "").toLowerCase().replace(/[^a-z]/g, "")
@@ -126,13 +133,14 @@ function main() {
       source_url: c.source === "own" ? null : c.source_url,
       // Commons originals are often 10+ MB; the standard 1920px thumbnail is
       // plenty for a 2000px-max game photo and much kinder to Wikimedia.
+      // (Standard Wikimedia thumbnail widths: 1920 for landscape, 1280 for portrait.)
       image_remote_url:
-        c.source === "wikimedia" && c.thumb_url && Math.max(c.width, c.height) > 1920 && c.width >= c.height
-          ? c.thumb_url.replace(/\/960px-/, "/1920px-")
+        c.source === "wikimedia" && c.thumb_url && Math.max(c.width, c.height) > 1920
+          ? c.thumb_url.replace(/\/960px-/, c.width >= c.height ? "/1920px-" : "/1280px-")
           : c.image_remote_url,
       author: c.author,
       // CC licenses require indicating changes; cropped photos say so in the credit.
-      license: d.crop ? `${c.license} (cropped)` : c.license,
+      license: editNote(c.license, d),
       attribution: c.attribution,
       name: d.name,
       notes: d.notes,
@@ -141,6 +149,7 @@ function main() {
       lng: d.lng,
       heading: c.heading,
       crop: d.crop ?? null,
+      redact: d.redact?.length ? d.redact : null,
     }
   })
 
