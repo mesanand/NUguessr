@@ -1,32 +1,50 @@
 import type { PhotoCredit as PhotoCreditData } from "@/lib/game-types"
 import { cn } from "@/lib/utils"
-import { cleanText, safeHttpUrl, sourceLabel } from "./credit-utils"
+import { cleanText, parseLicense, safeHttpUrl, sourceLabel } from "./credit-utils"
+
+const LINK_CLASS = "font-medium text-foreground underline underline-offset-2 hover:text-primary"
 
 /**
- * "Photo: {author} · {license} · via {source}" — the source part links to the
- * original. Everything is rendered as plain text (author strings come from
- * third-party metadata).
+ * A license string with its deed linked when recognized ("CC BY-SA 4.0") and
+ * any change note ("(cropped, text blurred)") as plain text. No "use client":
+ * also rendered by the server /credits page.
+ */
+export function LicenseText({ license, className }: { license: string | null | undefined; className?: string }) {
+  const parts = parseLicense(license)
+  if (!parts) return null
+  return (
+    <span className={className}>
+      {parts.href ? (
+        <a href={parts.href} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
+          {parts.text}
+        </a>
+      ) : (
+        parts.text
+      )}
+      {parts.note && ` ${parts.note}`}
+    </span>
+  )
+}
+
+/**
+ * "Photo: {author} · {license} · via {source}" — the license links to its
+ * deed and the source part links to the original. Everything is rendered as
+ * plain text (author strings come from third-party metadata).
  */
 export function PhotoCredit({ credit, className }: { credit: PhotoCreditData | null | undefined; className?: string }) {
   const author = cleanText(credit?.author)
-  const license = cleanText(credit?.license)
+  const hasLicense = cleanText(credit?.license) !== null
   const label = sourceLabel(credit?.source)
   const href = safeHttpUrl(credit?.sourceUrl)
 
   const parts: React.ReactNode[] = []
   if (author) parts.push(<span key="author">{author}</span>)
-  if (license) parts.push(<span key="license">{license}</span>)
+  if (hasLicense) parts.push(<LicenseText key="license" license={credit?.license} />)
   if (label || href) {
     const text = label ? `via ${label}` : "Source"
     parts.push(
       href ? (
-        <a
-          key="source"
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-medium text-foreground underline underline-offset-2 hover:text-primary"
-        >
+        <a key="source" href={href} target="_blank" rel="noopener noreferrer" className={LINK_CLASS}>
           {text}
         </a>
       ) : (

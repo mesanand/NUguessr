@@ -4,8 +4,11 @@
 // with next/dynamic { ssr: false } because Leaflet touches `window` at import.
 //
 // All state lives on the server (src/app/play/actions.ts). This component only
-// ever holds what the server has revealed: the photo URL before a guess, and
-// the round result after it. Refreshing resumes at the first unsubmitted round.
+// ever holds what the server has revealed: the photo URL of the current round
+// before a guess, and the round result after it. Photos are revealed one round
+// at a time: getGame() reveals the current round and starts its clock on the
+// server, and the timer counts down to that server deadline (corrected for
+// clock skew), so refreshing resumes the same round without resetting it.
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import Image from "next/image"
@@ -14,7 +17,6 @@ import { useRouter } from "next/navigation"
 import { AlertCircle, Loader2, RotateCcw } from "lucide-react"
 import { finishGame, getGame, submitGuess } from "@/app/play/actions"
 import type { GameState, LatLng, RoundResult } from "@/lib/game-types"
-import { ROUND_TIME_SECONDS } from "@/lib/scoring"
 import { Button } from "@/components/ui/button"
 import Timer from "@/components/timer"
 import MapResult from "@/components/map-result"
@@ -31,7 +33,8 @@ interface ShownResult {
 type Phase =
   | { kind: "loading" }
   | { kind: "error"; message: string }
-  | { kind: "guessing" }
+  /** `deadline` is the server deadline converted to the client's clock (epoch ms). */
+  | { kind: "guessing"; deadline: number }
   | { kind: "result"; shown: ShownResult }
 
 function sumPoints(game: GameState): number {
@@ -51,58 +54,81 @@ export default function PlayGame({ gameId }: { gameId: string }) {
   // Once the timer has run out, the round can only be submitted as a timeout.
   const timedOutRef = useRef(false)
 
-  const [finishing, setFinishing] = useState(false)
-  const [finishError, setFinishError] = useState<string | null>(null)
+  // "Start next round" (reveals the next photo on the server) / "View results".
+  const [advancing, setAdvancing] = useState(false)
+  const advancingRef = useRef(false)
+  const [advanceError, setAdvanceError] = useState<string | null>(null)
 
   const finishUrl = `/play-finish?game=${encodeURIComponent(gameId)}`
 
   /**
-   * Load (or reload) the game from the server. If `showRound` has already
-   * been submitted, its result is shown; otherwise play resumes at the first
-   * round without a result.
+   * Fetch the game from the server; this reveals the current round and starts
+   * its clock if it hasn't started yet. If `showRound` has already been
+   * submitted, its result is shown; otherwise the current round is played.
+   * With `fatal`, a failure replaces the screen with an error page; otherwise
+   * the caller shows the error inline.
    */
   const load = useCallback(
-    async (showRound?: number) => {
-      const res = await getGame(gameId)
+    /** Resolves to an error code, or null on success. */
+    async (opts: { showRound?: number; fatal?: boolean } = {}): Promise<string | null> => {
+      const { showRound, fatal = true } = opts
+      let res: Awaited<ReturnType<typeof getGame>>
+      const sentAt = Date.now()
+      try {
+        res = await getGame(gameId)
+      } catch {
+        res = { ok: false, error: "unknown_error" }
+      }
+      // Midpoint of the request approximates when the server read its clock.
+      const clientNow = (sentAt + Date.now()) / 2
       if (!res.ok) {
-        setPhase({ kind: "error", message: friendlyError(res.error) })
-        return
+        if (fatal) setPhase({ kind: "error", message: friendlyError(res.error) })
+        return res.error
       }
       const g = res.data
       if (g.finished) {
         router.replace(finishUrl)
-        return
+        return null
       }
       if (g.rounds.length === 0) {
-        setPhase({ kind: "error", message: friendlyError("game_not_found") })
-        return
+        if (fatal) setPhase({ kind: "error", message: friendlyError("game_not_found") })
+        return "game_not_found"
       }
       setGame(g)
 
       const lastIndex = g.rounds.length - 1
-      const firstOpen = g.rounds.findIndex((r) => r.result === null)
-      const revealIndex =
-        showRound !== undefined && g.rounds[showRound]?.result
-          ? showRound
-          : firstOpen === -1
-            ? lastIndex // everything submitted but not finished: show last result
-            : null
-
-      if (revealIndex !== null) {
-        const result = g.rounds[revealIndex].result as RoundResult
+      const showResultOf = (index: number) => {
+        const result = g.rounds[index].result as RoundResult
         const totalSoFar = g.rounds
-          .slice(0, revealIndex + 1)
+          .slice(0, index + 1)
           .reduce((acc, r) => acc + (r.result?.points ?? 0), 0)
-        setRoundIndex(revealIndex)
+        setRoundIndex(index)
         setPhase({
           kind: "result",
-          shown: { result, totalSoFar, isLastRound: revealIndex === lastIndex },
+          shown: { result, totalSoFar, isLastRound: index === lastIndex },
         })
-      } else {
-        timedOutRef.current = false
-        setRoundIndex(firstOpen)
-        setPhase({ kind: "guessing" })
       }
+
+      if (showRound !== undefined && g.rounds[showRound]?.result) {
+        showResultOf(showRound)
+      } else if (g.currentRound) {
+        const { roundIndex: current, deadline, serverNow } = g.currentRound
+        // remaining = deadline - (Date.now() + skew), skew = serverNow - clientNow
+        const clientDeadline = deadline - (serverNow - clientNow)
+        timedOutRef.current = false
+        setSubmitError(null)
+        setRoundIndex(current)
+        setPhase({ kind: "guessing", deadline: clientDeadline })
+      } else {
+        // Every round submitted but the game isn't finished: show the last result.
+        const lastPlayed = g.rounds.map((r) => r.result !== null).lastIndexOf(true)
+        if (lastPlayed === -1) {
+          if (fatal) setPhase({ kind: "error", message: friendlyError(null) })
+          return "unknown_error"
+        }
+        showResultOf(lastPlayed)
+      }
+      return null
     },
     [gameId, router, finishUrl]
   )
@@ -135,7 +161,13 @@ export default function PlayGame({ gameId }: { gameId: string }) {
           setPhase({ kind: "result", shown: { result, totalSoFar, isLastRound } })
         } else if (res.error === "round_out_of_order") {
           // Another tab (or a double submit) got there first: resync.
-          await load(index)
+          const err = await load({ showRound: index, fatal: false })
+          if (err) setSubmitError(friendlyError(err))
+        } else if (res.error === "round_not_started") {
+          // The server hasn't revealed this round (e.g. a stale tab): reveal it
+          // now and play it on its own clock.
+          const err = await load({ fatal: false })
+          if (err) setSubmitError(friendlyError(err))
         } else if (res.error === "game_finished") {
           router.replace(finishUrl)
         } else {
@@ -157,29 +189,31 @@ export default function PlayGame({ gameId }: { gameId: string }) {
   }, [submit])
 
   const handleNext = useCallback(async () => {
-    if (phase.kind !== "result" || !game) return
+    if (phase.kind !== "result" || !game || advancingRef.current) return
+    advancingRef.current = true
+    setAdvancing(true)
+    setAdvanceError(null)
     if (!phase.shown.isLastRound) {
-      setSubmitError(null)
-      timedOutRef.current = false
-      setRoundIndex((i) => i + 1)
-      setPhase({ kind: "guessing" })
+      // Reveal the next round on the server (this starts its clock).
+      const err = await load({ fatal: false })
+      if (err) setAdvanceError(friendlyError(err))
+      advancingRef.current = false
+      setAdvancing(false)
       return
     }
-    if (finishing) return
-    setFinishing(true)
-    setFinishError(null)
     try {
       const res = await finishGame(gameId)
       if (res.ok) {
         router.push(finishUrl)
         return // stay disabled while navigating
       }
-      setFinishError(friendlyError(res.error))
+      setAdvanceError(friendlyError(res.error))
     } catch {
-      setFinishError(friendlyError(null))
+      setAdvanceError(friendlyError(null))
     }
-    setFinishing(false)
-  }, [phase, game, finishing, gameId, router, finishUrl])
+    advancingRef.current = false
+    setAdvancing(false)
+  }, [phase, game, load, gameId, router, finishUrl])
 
   if (phase.kind === "loading") {
     return (
@@ -216,8 +250,8 @@ export default function PlayGame({ gameId }: { gameId: string }) {
         totalSoFar={phase.shown.totalSoFar}
         isLastRound={phase.shown.isLastRound}
         onNext={handleNext}
-        pending={finishing}
-        error={finishError}
+        pending={advancing}
+        error={advanceError}
       />
     )
   }
@@ -235,7 +269,7 @@ export default function PlayGame({ gameId }: { gameId: string }) {
         </div>
         <Timer
           key={roundIndex}
-          seconds={ROUND_TIME_SECONDS}
+          deadline={phase.deadline}
           onComplete={handleTimeout}
           stopped={submitting}
         />
@@ -245,15 +279,22 @@ export default function PlayGame({ gameId }: { gameId: string }) {
           leaves room for the collapsed "Open map" bar). */}
       <main className="relative min-h-0 flex-1 bg-muted pb-20 sm:pb-0">
         <div className="relative h-full w-full">
-          <Image
-            key={round.imageUrl}
-            src={round.imageUrl}
-            alt="Mystery campus location"
-            fill
-            unoptimized
-            priority
-            className="object-contain"
-          />
+          {round?.imageUrl ? (
+            <Image
+              key={round.imageUrl}
+              src={round.imageUrl}
+              alt="Mystery campus location"
+              fill
+              unoptimized
+              priority
+              className="object-contain"
+            />
+          ) : (
+            <p className="flex h-full items-center justify-center gap-2 text-base text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              Loading photo...
+            </p>
+          )}
         </div>
 
         {submitError && (

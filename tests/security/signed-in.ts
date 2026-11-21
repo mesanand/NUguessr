@@ -58,7 +58,15 @@ async function main() {
     const anonPeek = await anonC.rpc("get_game", { p_game_id: gameId })
     check("anon cannot load a signed-in game", !!anonPeek.error, anonPeek.error?.message)
 
-    for (let i = 0; i < 5; i++) {
+    // Round 0 on time; round 1 after the server deadline (clock moved back via service role).
+    const r0 = await a.client.rpc("submit_guess", { p_game_id: gameId, p_round_index: 0, p_guess_lat: 42.339, p_guess_lng: -71.089 })
+    await a.client.rpc("get_game", { p_game_id: gameId })
+    await admin.from("games").update({ round_started_at: new Date(Date.now() - 120_000).toISOString() }).eq("id", gameId)
+    const r1 = await a.client.rpc("submit_guess", { p_game_id: gameId, p_round_index: 1, p_guess_lat: 42.339, p_guess_lng: -71.089 })
+    check("on-time guess scores", (r0.data?.points ?? 0) > 0 && r0.data?.late === false, JSON.stringify({ pts: r0.data?.points, late: r0.data?.late }))
+    check("guess after the server deadline scores 0 (late)", r1.data?.points === 0 && r1.data?.late === true, r1.error?.message ?? JSON.stringify({ pts: r1.data?.points, late: r1.data?.late }))
+    for (let i = 2; i < 5; i++) {
+      await a.client.rpc("get_game", { p_game_id: gameId })
       await a.client.rpc("submit_guess", { p_game_id: gameId, p_round_index: i, p_guess_lat: 42.339, p_guess_lng: -71.089 })
     }
     const fin = await a.client.rpc("finish_game", { p_game_id: gameId })
@@ -66,6 +74,16 @@ async function main() {
     const after = await a.client.from("users").select("total_games, high_score, avg_score").eq("id", a.id).single()
     check("finish_game updated stats once", after.data?.total_games === 1 && after.data?.high_score === fin.data?.totalScore,
       JSON.stringify(after.data))
+
+    // Abandoning: starting a new game closes and counts the unfinished one.
+    const g2 = await a.client.rpc("start_game")
+    await a.client.rpc("submit_guess", { p_game_id: g2.data.gameId, p_round_index: 0, p_guess_lat: 42.339, p_guess_lng: -71.089 })
+    await a.client.rpc("start_game")
+    const after2 = await a.client.from("users").select("total_games").eq("id", a.id).single()
+    const abandoned = await admin.from("games").select("finished_at, abandoned").eq("id", g2.data.gameId).single()
+    check("abandoned game is closed and counted", after2.data?.total_games === 2 && abandoned.data?.abandoned === true && !!abandoned.data?.finished_at, JSON.stringify({ games: after2.data?.total_games, ...abandoned.data }))
+    const late2 = await a.client.rpc("submit_guess", { p_game_id: g2.data.gameId, p_round_index: 1, p_guess_lat: 42.34, p_guess_lng: -71.09 })
+    check("no submissions to an abandoned game", !!late2.error, late2.error?.message)
 
     // Promote via service role (what the admin SQL does) and re-check is_admin.
     await admin.from("users").update({ role: "admin" }).eq("id", b.id)

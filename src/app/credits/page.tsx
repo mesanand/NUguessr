@@ -1,11 +1,13 @@
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/server"
-import { cleanText, safeHttpUrl, sourceLabel } from "@/components/game/credit-utils"
+import { cleanText, sourceHomeUrl, sourceLabel } from "@/components/game/credit-utils"
+import { LicenseText } from "@/components/game/photo-credit"
 
 // Attribution for every live photo. Deliberately lists only author, license
-// and source link — no place names, coordinates or thumbnails — so it can't
-// be used as an answer key. photo_credits() returns rows in random order.
+// and source site — no place names, coordinates, thumbnails or per-file links
+// (Commons file names often name the building) — so it can't be used as an
+// answer key. photo_credits() returns rows in random order.
 
 export const dynamic = "force-dynamic"
 
@@ -17,7 +19,6 @@ type CreditRow = {
   author: string | null
   license: string | null
   source: string | null
-  source_url: string | null
 }
 
 export default async function CreditsPage() {
@@ -46,7 +47,10 @@ export default async function CreditsPage() {
           <p className="text-base text-muted-foreground">
             NUGuessr&apos;s campus photos come from Wikimedia Commons, Mapillary and our own
             contributors, and are used under their original licenses. Thank you to everyone who
-            shares their photos. Follow a source link for the full license and original file.
+            shares their photos. Follow a license link for its full terms.
+          </p>
+          <p className="text-base text-muted-foreground">
+            Each photo&apos;s original file is linked on the results screen right after you guess it.
           </p>
         </header>
 
@@ -69,10 +73,9 @@ export default async function CreditsPage() {
               <ul className="divide-y divide-border overflow-hidden rounded-lg border border-border">
                 {rows.map((row, i) => {
                   const author = cleanText(row.author) ?? "Unknown author"
-                  const license = cleanText(row.license)
+                  const hasLicense = cleanText(row.license) !== null
                   const label = sourceLabel(row.source)
-                  const sourceText = label ? `via ${label}` : "Source"
-                  const href = safeHttpUrl(row.source_url)
+                  const home = sourceHomeUrl(row.source)
                   return (
                     <li
                       key={i}
@@ -80,20 +83,27 @@ export default async function CreditsPage() {
                     >
                       <div className="min-w-0">
                         <p className="break-words font-medium">{author}</p>
-                        {license && <p className="text-sm text-muted-foreground">{license}</p>}
+                        {hasLicense && (
+                          <p className="text-sm text-muted-foreground">
+                            <LicenseText license={row.license} />
+                          </p>
+                        )}
                       </div>
-                      {href ? (
-                        <a
-                          href={href}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex min-h-11 shrink-0 items-center text-sm font-medium text-foreground underline underline-offset-2 hover:text-primary"
-                        >
-                          {sourceText}
-                        </a>
-                      ) : (
-                        label && <span className="shrink-0 text-sm text-muted-foreground">{sourceText}</span>
-                      )}
+                      {label &&
+                        (home ? (
+                          <a
+                            href={home}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex min-h-11 shrink-0 items-center text-sm font-medium text-foreground underline underline-offset-2 hover:text-primary"
+                          >
+                            {label}
+                          </a>
+                        ) : (
+                          <span className="inline-flex min-h-11 shrink-0 items-center text-sm text-muted-foreground">
+                            {label}
+                          </span>
+                        ))}
                     </li>
                   )
                 })}

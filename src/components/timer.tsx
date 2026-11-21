@@ -5,7 +5,14 @@ import { Clock } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface TimerProps {
-  seconds: number
+  /**
+   * Absolute deadline in the CLIENT's clock (epoch ms). Preferred: the game
+   * passes the server deadline corrected for clock skew, so a refresh never
+   * resets the countdown.
+   */
+  deadline?: number
+  /** Fallback when no deadline is given: count down this many seconds from mount. */
+  seconds?: number
   /** Called exactly once when the countdown reaches zero (unless stopped). */
   onComplete?: () => void
   /** Freeze the display and never fire onComplete (e.g. while a guess is being submitted). */
@@ -13,13 +20,22 @@ interface TimerProps {
   className?: string
 }
 
+function secondsLeft(deadline: number): number {
+  return Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
+}
+
 /**
  * Countdown based on a fixed deadline (not a tick counter), so a throttled
  * background tab still expires on time. Remount with a new `key` per round.
  */
-export default function Timer({ seconds, onComplete, stopped = false, className }: TimerProps) {
-  const [timeLeft, setTimeLeft] = useState(seconds)
-  const deadlineRef = useRef(Date.now() + seconds * 1000)
+export default function Timer({ deadline, seconds = 0, onComplete, stopped = false, className }: TimerProps) {
+  const fallbackDeadlineRef = useRef<number | null>(null)
+  if (deadline === undefined && fallbackDeadlineRef.current === null) {
+    fallbackDeadlineRef.current = Date.now() + seconds * 1000
+  }
+  const target = deadline ?? (fallbackDeadlineRef.current as number)
+
+  const [timeLeft, setTimeLeft] = useState(() => secondsLeft(target))
   const firedRef = useRef(false)
   const onCompleteRef = useRef(onComplete)
   onCompleteRef.current = onComplete
@@ -27,7 +43,7 @@ export default function Timer({ seconds, onComplete, stopped = false, className 
   useEffect(() => {
     if (stopped) return
     const tick = () => {
-      const left = Math.max(0, Math.ceil((deadlineRef.current - Date.now()) / 1000))
+      const left = secondsLeft(target)
       setTimeLeft(left)
       if (left <= 0 && !firedRef.current) {
         firedRef.current = true
@@ -37,7 +53,7 @@ export default function Timer({ seconds, onComplete, stopped = false, className 
     tick()
     const id = setInterval(tick, 250)
     return () => clearInterval(id)
-  }, [stopped])
+  }, [stopped, target])
 
   const minutes = Math.floor(timeLeft / 60)
   const remainingSeconds = timeLeft % 60

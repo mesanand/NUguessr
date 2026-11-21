@@ -9,6 +9,9 @@ const MESSAGES: Record<string, string> = {
   round_out_of_order: "That round was already submitted.",
   round_out_of_range: "That round doesn't exist.",
   bad_guess: "That guess wasn't a valid map location.",
+  round_not_started: "That round hasn't started yet. Please try again.",
+  rate_limited: "You've played a lot — take a short break and try again later.",
+  unknown_error: "Something went wrong. Please try again.",
 }
 
 export function friendlyError(code: string | null | undefined): string {

@@ -120,22 +120,59 @@ export type FetchImageOptions = {
   retries?: number
   /** Abort a single attempt after this many ms. */
   timeoutMs?: number
+  /**
+   * Allow file:// URLs (own photos). Scripts only — the admin server action
+   * must never set this (it would let a candidate row read server files).
+   */
+  allowFile?: boolean
+  /**
+   * Extra exact origins (e.g. "http://127.0.0.1:54321") allowed besides the
+   * image-host allowlist, http included. Scripts only (publish verification).
+   */
+  extraOrigins?: string[]
+}
+
+/** Max downloaded body size; larger responses are aborted mid-stream. */
+export const MAX_IMAGE_BYTES = 40 * 1024 * 1024
+const MAX_REDIRECTS = 3
+
+/**
+ * SSRF guard: http(s) image fetches may only go to these hosts (https only).
+ * Wikimedia Commons (upload./thumb. etc.), Mapillary and its Facebook CDN.
+ */
+export function isAllowedImageHost(hostname: string): boolean {
+  const h = hostname.toLowerCase().replace(/\.$/, "")
+  const under = (domain: string) => h === domain || h.endsWith(`.${domain}`)
+  return under("wikimedia.org") || under("mapillary.com") || under("fbcdn.net")
+}
+
+function assertAllowedUrl(url: URL, extraOrigins: string[]): void {
+  if (extraOrigins.includes(url.origin)) return
+  if (url.protocol !== "https:") throw new Error(`refusing non-https image URL (${url.protocol}//${url.host})`)
+  if (url.username || url.password) throw new Error("refusing image URL with credentials")
+  if (url.port && url.port !== "443") throw new Error(`refusing image URL with port ${url.port}`)
+  if (!isAllowedImageHost(url.hostname)) throw new Error(`image host not allowed: ${url.hostname}`)
 }
 
 /**
- * Download (http/https) or read (file://, own photos) an image.
+ * Download (https, allowlisted hosts) or read (file://, own photos, only with
+ * allowFile) an image.
  * HEIC/HEIF own photos are converted to JPEG (via heic-convert) so sharp can
  * decode them without libheif's HEVC plugin.
  */
 export async function fetchImage(url: string, opts: FetchImageOptions = {}): Promise<Buffer> {
-  const { retries = 4, timeoutMs = 60_000 } = opts
+  const { retries = 4, timeoutMs = 60_000, allowFile = false } = opts
+  const extraOrigins = (opts.extraOrigins ?? []).map((o) => new URL(o).origin)
   const parsed = new URL(url)
 
   let buffer: Buffer
   if (parsed.protocol === "file:") {
+    if (!allowFile) throw new Error("file:// image URLs are not allowed here")
     buffer = await readFile(fileURLToPath(parsed))
+    if (buffer.length > MAX_IMAGE_BYTES) throw new Error(`image larger than ${MAX_IMAGE_BYTES} bytes`)
   } else if (parsed.protocol === "http:" || parsed.protocol === "https:") {
-    buffer = await fetchWithRetry(url, retries, timeoutMs)
+    assertAllowedUrl(parsed, extraOrigins)
+    buffer = await fetchWithRetry(parsed.toString(), retries, timeoutMs, extraOrigins)
   } else {
     throw new Error(`unsupported image URL protocol: ${parsed.protocol}`)
   }
@@ -144,16 +181,62 @@ export async function fetchImage(url: string, opts: FetchImageOptions = {}): Pro
   return buffer
 }
 
-async function fetchWithRetry(url: string, retries: number, timeoutMs: number): Promise<Buffer> {
+class FatalFetchError extends Error {}
+
+/** One request chain: manual redirects, every hop re-validated, body capped. */
+async function fetchOnce(url: string, timeoutMs: number, extraOrigins: string[]): Promise<Response> {
+  const signal = AbortSignal.timeout(timeoutMs)
+  let current = new URL(url)
+  for (let hop = 0; ; hop++) {
+    const res = await fetch(current, {
+      headers: { "User-Agent": USER_AGENT, "Api-User-Agent": USER_AGENT },
+      signal,
+      redirect: "manual",
+    })
+    if (res.status < 300 || res.status >= 400 || res.status === 304) return res
+    await res.body?.cancel().catch(() => {})
+    const location = res.headers.get("location")
+    if (!location) throw new FatalFetchError(`HTTP ${res.status} redirect without Location`)
+    if (hop >= MAX_REDIRECTS) throw new FatalFetchError(`too many redirects (> ${MAX_REDIRECTS})`)
+    const next = new URL(location, current)
+    try {
+      assertAllowedUrl(next, extraOrigins)
+    } catch (err) {
+      throw new FatalFetchError(`redirect rejected: ${(err as Error).message}`)
+    }
+    current = next
+  }
+}
+
+async function readCapped(res: Response): Promise<Buffer> {
+  const declared = Number(res.headers.get("content-length"))
+  if (Number.isFinite(declared) && declared > MAX_IMAGE_BYTES) {
+    await res.body?.cancel().catch(() => {})
+    throw new FatalFetchError(`image larger than ${MAX_IMAGE_BYTES} bytes (content-length ${declared})`)
+  }
+  if (!res.body) return Buffer.alloc(0)
+  const reader = res.body.getReader()
+  const chunks: Uint8Array[] = []
+  let total = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    total += value.byteLength
+    if (total > MAX_IMAGE_BYTES) {
+      await reader.cancel().catch(() => {})
+      throw new FatalFetchError(`image larger than ${MAX_IMAGE_BYTES} bytes`)
+    }
+    chunks.push(value)
+  }
+  return Buffer.concat(chunks, total)
+}
+
+async function fetchWithRetry(url: string, retries: number, timeoutMs: number, extraOrigins: string[]): Promise<Buffer> {
   let lastError: unknown
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const res = await fetch(url, {
-        headers: { "User-Agent": USER_AGENT, "Api-User-Agent": USER_AGENT },
-        signal: AbortSignal.timeout(timeoutMs),
-        redirect: "follow",
-      })
-      if (res.ok) return Buffer.from(await res.arrayBuffer())
+      const res = await fetchOnce(url, timeoutMs, extraOrigins)
+      if (res.ok) return await readCapped(res)
 
       await res.body?.cancel().catch(() => {})
       const retryable = res.status === 429 || res.status >= 500
@@ -169,6 +252,8 @@ async function fetchWithRetry(url: string, retries: number, timeoutMs: number): 
       await sleep(wait)
     } catch (err) {
       lastError = err
+      if (err instanceof FatalFetchError) break
+      if (attempt === retries) break
       await sleep(Math.min(1000 * 2 ** attempt, 30_000))
     }
   }

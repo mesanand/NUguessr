@@ -72,12 +72,12 @@ async function main() {
     check("start_game works", false, start.error.message)
     return
   }
-  const game = start.data as { gameId: string; rounds: { imageUrl: string; result: unknown }[] }
+  const game = start.data as { gameId: string; rounds: { imageUrl: string | null; result: unknown }[] }
   check("start_game returns 5 rounds", game.rounds.length === 5, `${game.rounds.length}`)
   const leaks = findForbidden(game)
   check("start_game payload has no answer fields", leaks.length === 0, leaks.join(", "))
-  check("image paths are UUID-named", game.rounds.every((r) => /^([\w-]+\/)?[0-9a-f-]{36}\.webp$/i.test(r.imageUrl)),
-    game.rounds.map((r) => r.imageUrl).join(" "))
+  check("round 0 photo path is UUID-named", /^([\w-]+\/)?[0-9a-f-]{36}\.webp$/i.test(game.rounds[0].imageUrl ?? ""), String(game.rounds[0].imageUrl))
+  check("future rounds' photos are hidden", game.rounds.slice(1).every((r) => r.imageUrl === null))
   const again = await supabase.rpc("get_game", { p_game_id: game.gameId })
   check("get_game before guessing has no answer fields", findForbidden(again.data).length === 0)
 
@@ -91,11 +91,18 @@ async function main() {
   check("result reveals name + credit", !!first.data?.actual && "name" in (first.data ?? {}) && !!first.data?.credit)
   const dup = await supabase.rpc("submit_guess", { p_game_id: game.gameId, p_round_index: 0, p_guess_lat: 42.3398, p_guess_lng: -71.0892 })
   check("same round cannot be submitted twice", !!dup.error, dup.error?.message)
+  const early1 = await supabase.rpc("submit_guess", { p_game_id: game.gameId, p_round_index: 1, p_guess_lat: 42.34, p_guess_lng: -71.09 })
+  check("next round cannot be guessed before it is revealed", early1.error?.message?.includes("round_not_started") ?? false, early1.error?.message)
+  const rev1 = await supabase.rpc("get_game", { p_game_id: game.gameId })
+  check("get_game reveals only the next round", rev1.data?.rounds?.[1]?.imageUrl && rev1.data?.rounds?.[2]?.imageUrl === null && rev1.data?.currentRound?.roundIndex === 1, JSON.stringify(rev1.data?.currentRound))
+  check("revealed round still has no answer fields", findForbidden(rev1.data?.rounds?.[1]).length === 0)
   const timeout = await supabase.rpc("submit_guess", { p_game_id: game.gameId, p_round_index: 1 })
   check("timeout scores 0", !timeout.error && timeout.data?.points === 0, timeout.error?.message)
+  await supabase.rpc("get_game", { p_game_id: game.gameId })
   const bad = await supabase.rpc("submit_guess", { p_game_id: game.gameId, p_round_index: 2, p_guess_lat: 999, p_guess_lng: 0 })
   check("invalid coordinates rejected", !!bad.error, bad.error?.message)
   for (let i = 2; i < 5; i++) {
+    await supabase.rpc("get_game", { p_game_id: game.gameId })
     await supabase.rpc("submit_guess", { p_game_id: game.gameId, p_round_index: i, p_guess_lat: 42.339, p_guess_lng: -71.089 })
   }
   const fin = await supabase.rpc("finish_game", { p_game_id: game.gameId })
@@ -105,10 +112,16 @@ async function main() {
   const late = await supabase.rpc("submit_guess", { p_game_id: game.gameId, p_round_index: 4, p_guess_lat: 42.34, p_guess_lng: -71.09 })
   check("no submissions after finish", !!late.error, late.error?.message)
 
-  // 4. Published images carry no metadata
+  // 4. Credits and storage listing
+  const credits = await supabase.rpc("photo_credits")
+  check("photo_credits has no per-file links, names or coordinates", !credits.error && (credits.data ?? []).every((c: Record<string, unknown>) => !("source_url" in c) && !("name" in c) && !("lat" in c)), credits.error?.message ?? `${credits.data?.length} credits`)
+  const list = await supabase.storage.from("images").list("", { limit: 5 })
+  check("anon cannot list the photo bucket", !!list.error || (list.data ?? []).length === 0, list.error?.message ?? `${list.data?.length} objects listed`)
+
+  // 5. Published images carry no metadata
   if (imageChecks > 0) {
-    const games = await Promise.all(Array.from({ length: Math.ceil(imageChecks / 5) }, () => supabase.rpc("start_game")))
-    const urls = [...new Set(games.flatMap((g) => (g.data?.rounds ?? []).map((r: { imageUrl: string }) => r.imageUrl)))].slice(0, imageChecks)
+    const games = await Promise.all(Array.from({ length: imageChecks * 2 }, () => supabase.rpc("start_game")))
+    const urls = [...new Set(games.map((g) => g.data?.rounds?.[0]?.imageUrl as string).filter(Boolean))].slice(0, imageChecks)
     for (const path of urls) {
       const full = /^https?:/.test(path) ? path : `${url}/storage/v1/object/public/images/${path}`
       const res = await fetch(full)

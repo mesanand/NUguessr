@@ -93,8 +93,19 @@ create table if not exists public.games (
   place_ids bigint[] not null,
   created_at timestamptz not null default now(),
   finished_at timestamptz,
-  total_score integer
+  total_score integer,
+  -- Rounds are revealed one at a time: only rounds <= revealed_round have
+  -- their photo returned, and the current round has a server-side deadline
+  -- counted from round_started_at.
+  revealed_round smallint,
+  round_started_at timestamptz,
+  -- true when the game was closed because the player abandoned it
+  abandoned boolean not null default false
 );
+
+alter table public.games add column if not exists revealed_round smallint;
+alter table public.games add column if not exists round_started_at timestamptz;
+alter table public.games add column if not exists abandoned boolean not null default false;
 
 create table if not exists public.game_rounds (
   game_id uuid not null references public.games (id) on delete cascade,
@@ -105,10 +116,14 @@ create table if not exists public.game_rounds (
   distance_yards integer,
   points integer not null,
   submitted_at timestamptz not null default now(),
+  -- guessed after the server-side deadline (scored 0)
+  late boolean not null default false,
   primary key (game_id, round_index)
 );
 
-create index if not exists games_user_id_idx on public.games (user_id);
+alter table public.game_rounds add column if not exists late boolean not null default false;
+
+create index if not exists games_user_id_idx on public.games (user_id, created_at);
 
 alter table public.games enable row level security;
 alter table public.game_rounds enable row level security;
@@ -123,9 +138,35 @@ revoke insert, update, delete, truncate on public.users from anon, authenticated
 grant update (username) on public.users to authenticated;
 drop policy if exists "Users can insert their own row" on public.users;
 
--- Views/tables the client only reads.
+-- Views the client only reads.
 revoke insert, update, delete, truncate, references, trigger on public.leaderboard_public from anon, authenticated;
-revoke insert, update, delete, truncate, references, trigger on public.places from anon, authenticated;
+
+-- places now holds the answers (lat/lng/name), so clients must not read it
+-- at all: the game gets photos via start_game/get_game and answers via
+-- submit_guess. Locked here (not at cutover) so answers are never readable,
+-- even while real places are being published. Admins read/write through
+-- the "Admins manage places" RLS policy below.
+drop policy if exists "Places are publicly readable" on public.places;
+revoke all on public.places from anon, authenticated;
+grant select on public.places to authenticated;  -- RLS: admins only
+
+-- The public bucket serves objects by URL without any policy; a SELECT
+-- policy on storage.objects would only let anyone LIST every photo.
+drop policy if exists "Campus images are publicly readable" on storage.objects;
+
+-- Pre-existing trigger function: pin search_path like every other definer.
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = ''
+as $$
+begin
+  insert into public.users (id, email)
+  values (new.id, new.email)
+  on conflict (id) do nothing;
+  return new;
+end;
+$$;
 
 -- ---------------------------------------------------------------------
 -- is_admin(): app_metadata.role (set by a project owner) OR users.role.
@@ -161,14 +202,14 @@ create policy "Admins manage places"
   on public.places for all to authenticated
   using ((select public.is_admin()))
   with check ((select public.is_admin()));
-grant insert, update, delete on public.places to authenticated;
+grant insert, update, delete on public.places to authenticated;  -- RLS: admins only
 
 drop policy if exists "Admins manage candidates" on public.place_candidates;
 create policy "Admins manage candidates"
   on public.place_candidates for all to authenticated
   using ((select public.is_admin()))
   with check ((select public.is_admin()));
-revoke all on public.place_candidates from anon;
+revoke all on public.place_candidates from anon, authenticated;
 grant select, insert, update, delete on public.place_candidates to authenticated;
 
 drop policy if exists "Admins can upload campus images" on storage.objects;
@@ -248,9 +289,65 @@ $$;
 revoke all on function public.random_active_places(integer) from public, anon, authenticated;
 
 -- ---------------------------------------------------------------------
--- Game RPCs. Only image paths are returned before a guess.
+-- Game RPCs.
+--  * Rounds are revealed one at a time: a round's photo is returned only
+--    once it is the current round, so photos can't be pre-fetched, and the
+--    current round's 45 s deadline is enforced here (plus a grace period
+--    for latency). A late guess scores 0, like a timeout.
+--  * Nothing about a place (coordinates, name, notes, source link) is
+--    returned before that round is submitted.
+--  * Signed-in players: starting a new game closes any unfinished one and
+--    counts it (missing rounds = 0) so restarting until you get easy photos
+--    doesn't pay off, and at most 30 games per hour.
 -- ---------------------------------------------------------------------
-create or replace function public.start_game()
+create or replace function public.round_seconds()
+returns integer language sql immutable set search_path = '' as $$ select 45 $$;
+
+-- Internal: close a game, sum its rounds and update the owner's stats once.
+create or replace function public.finalize_game(p_game_id uuid, p_abandoned boolean)
+returns integer
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  g public.games;
+  total integer;
+  prev public.users;
+begin
+  select * into g from public.games where id = p_game_id for update;
+  if not found then
+    raise exception 'game_not_found' using errcode = 'P0001';
+  end if;
+  if g.finished_at is not null then
+    return g.total_score;
+  end if;
+
+  select coalesce(sum(points), 0) into total from public.game_rounds where game_id = g.id;
+  update public.games
+    set finished_at = now(), total_score = total, abandoned = p_abandoned
+    where id = g.id;
+
+  if g.user_id is not null then
+    insert into public.users (id, total_games, high_score, avg_score)
+    values (g.user_id, 0, 0, 0)
+    on conflict (id) do nothing;
+
+    select * into prev from public.users where id = g.user_id for update;
+    update public.users set
+      total_games = prev.total_games + 1,
+      high_score = greatest(prev.high_score, total),
+      avg_score = round(((prev.avg_score::numeric * prev.total_games) + total) / (prev.total_games + 1))::integer
+    where id = g.user_id;
+  end if;
+  return total;
+end;
+$$;
+
+revoke all on function public.finalize_game(uuid, boolean) from public, anon, authenticated;
+
+create or replace function public.get_game(p_game_id uuid)
 returns jsonb
 language plpgsql
 volatile
@@ -258,34 +355,12 @@ security definer
 set search_path = ''
 as $$
 declare
-  ids bigint[];
-  new_id uuid;
-begin
-  select array_agg(x) into ids from public.random_active_places(5) as x;
-  if ids is null or array_length(ids, 1) = 0 then
-    raise exception 'no_places' using errcode = 'P0001';
-  end if;
-
-  insert into public.games (user_id, place_ids)
-  values (auth.uid(), ids)
-  returning id into new_id;
-
-  return public.get_game(new_id);
-end;
-$$;
-
-create or replace function public.get_game(p_game_id uuid)
-returns jsonb
-language plpgsql
-stable
-security definer
-set search_path = ''
-as $$
-declare
   g public.games;
+  n integer;
+  cur integer;
   result jsonb;
 begin
-  select * into g from public.games where id = p_game_id;
+  select * into g from public.games where id = p_game_id for update;
   if not found then
     return null;
   end if;
@@ -293,15 +368,31 @@ begin
     raise exception 'not_your_game' using errcode = 'P0001';
   end if;
 
+  n := array_length(g.place_ids, 1);
+  select count(*) into cur from public.game_rounds where game_id = g.id;
+
+  -- Reveal the current round (starts its clock) the first time it is asked for.
+  if g.finished_at is null and cur < n and (g.revealed_round is null or g.revealed_round < cur) then
+    update public.games set revealed_round = cur, round_started_at = now()
+      where id = g.id
+      returning * into g;
+  end if;
+
   select jsonb_build_object(
     'gameId', g.id,
     'finished', g.finished_at is not null,
     'totalScore', g.total_score,
+    'roundSeconds', public.round_seconds(),
+    'currentRound', case when g.finished_at is null and cur < n then jsonb_build_object(
+        'roundIndex', cur,
+        'deadline', (extract(epoch from g.round_started_at + make_interval(secs => public.round_seconds())) * 1000)::bigint,
+        'serverNow', (extract(epoch from clock_timestamp()) * 1000)::bigint
+      ) else null end,
     'rounds', coalesce(jsonb_agg(
       jsonb_build_object(
         'roundIndex', r.ord - 1,
-        'imageUrl', p.image_url,
-        -- results only for rounds already submitted
+        -- photo only for submitted rounds and the current round
+        'imageUrl', case when r.ord - 1 <= cur or g.finished_at is not null then p.image_url else null end,
         'result', case when gr.game_id is null then null else jsonb_build_object(
           'actual', jsonb_build_object('lat', p.lat, 'lng', p.lng),
           'guess', case when gr.guess_lat is null then null
@@ -310,6 +401,7 @@ begin
           'notes', p.notes,
           'distanceYards', gr.distance_yards,
           'points', gr.points,
+          'late', gr.late,
           'credit', jsonb_build_object(
             'author', p.author, 'license', p.license,
             'source', p.source, 'sourceUrl', p.source_url)
@@ -323,6 +415,44 @@ begin
     on gr.game_id = g.id and gr.round_index = r.ord - 1;
 
   return result;
+end;
+$$;
+
+create or replace function public.start_game()
+returns jsonb
+language plpgsql
+volatile
+security definer
+set search_path = ''
+as $$
+declare
+  ids bigint[];
+  new_id uuid;
+  open_game uuid;
+begin
+  if auth.uid() is not null then
+    if (select count(*) from public.games
+        where user_id = auth.uid() and created_at > now() - interval '1 hour') >= 30 then
+      raise exception 'rate_limited' using errcode = 'P0001';
+    end if;
+    -- Close (and count) any unfinished game: no free restarts.
+    for open_game in
+      select id from public.games where user_id = auth.uid() and finished_at is null
+    loop
+      perform public.finalize_game(open_game, true);
+    end loop;
+  end if;
+
+  select array_agg(x) into ids from public.random_active_places(5) as x;
+  if ids is null or array_length(ids, 1) = 0 then
+    raise exception 'no_places' using errcode = 'P0001';
+  end if;
+
+  insert into public.games (user_id, place_ids)
+  values (auth.uid(), ids)
+  returning id into new_id;
+
+  return public.get_game(new_id);
 end;
 $$;
 
@@ -346,6 +476,7 @@ declare
   d integer;
   pts integer;
   total integer;
+  late boolean := false;
 begin
   select * into g from public.games where id = p_game_id for update;
   if not found then
@@ -365,10 +496,16 @@ begin
   if p_round_index < 0 or p_round_index >= array_length(g.place_ids, 1) then
     raise exception 'round_out_of_range' using errcode = 'P0001';
   end if;
+  if g.revealed_round is distinct from p_round_index or g.round_started_at is null then
+    raise exception 'round_not_started' using errcode = 'P0001';
+  end if;
   if (p_guess_lat is null) <> (p_guess_lng is null)
      or (p_guess_lat is not null and (abs(p_guess_lat) > 90 or abs(p_guess_lng) > 180)) then
     raise exception 'bad_guess' using errcode = 'P0001';
   end if;
+
+  -- Server-side clock: 45 s + 10 s grace for latency.
+  late := clock_timestamp() > g.round_started_at + make_interval(secs => public.round_seconds() + 10);
 
   pid := g.place_ids[p_round_index + 1];
   select * into p from public.places where id = pid;
@@ -378,17 +515,18 @@ begin
     pts := 0;
   else
     d := public.distance_yards(p_guess_lat, p_guess_lng, p.lat, p.lng);
-    pts := public.round_points(d);
+    pts := case when late then 0 else public.round_points(d) end;
   end if;
 
-  insert into public.game_rounds (game_id, round_index, place_id, guess_lat, guess_lng, distance_yards, points)
-  values (g.id, p_round_index, pid, p_guess_lat, p_guess_lng, d, pts);
+  insert into public.game_rounds (game_id, round_index, place_id, guess_lat, guess_lng, distance_yards, points, late)
+  values (g.id, p_round_index, pid, p_guess_lat, p_guess_lng, d, pts, late and p_guess_lat is not null);
 
   select coalesce(sum(points), 0) into total from public.game_rounds where game_id = g.id;
 
   return jsonb_build_object(
     'roundIndex', p_round_index,
     'isLastRound', p_round_index = array_length(g.place_ids, 1) - 1,
+    'late', late and p_guess_lat is not null,
     'actual', jsonb_build_object('lat', p.lat, 'lng', p.lng),
     'guess', case when p_guess_lat is null then null
              else jsonb_build_object('lat', p_guess_lat, 'lng', p_guess_lng) end,
@@ -415,67 +553,53 @@ declare
   g public.games;
   rounds_done integer;
   total integer;
-  prev public.users;
 begin
-  select * into g from public.games where id = p_game_id for update;
+  select * into g from public.games where id = p_game_id;
   if not found then
     raise exception 'game_not_found' using errcode = 'P0001';
   end if;
   if g.user_id is not null and g.user_id is distinct from auth.uid() then
     raise exception 'not_your_game' using errcode = 'P0001';
   end if;
+  if g.finished_at is null then
+    select count(*) into rounds_done from public.game_rounds where game_id = g.id;
+    if rounds_done < array_length(g.place_ids, 1) then
+      raise exception 'game_incomplete' using errcode = 'P0001';
+    end if;
+  end if;
 
   -- Idempotent: finishing twice never double-counts stats.
-  if g.finished_at is not null then
-    return jsonb_build_object('gameId', g.id, 'totalScore', g.total_score,
-      'maxScore', 5000 * array_length(g.place_ids, 1), 'rounds', array_length(g.place_ids, 1));
-  end if;
-
-  select count(*), coalesce(sum(points), 0) into rounds_done, total
-  from public.game_rounds where game_id = g.id;
-  if rounds_done < array_length(g.place_ids, 1) then
-    raise exception 'game_incomplete' using errcode = 'P0001';
-  end if;
-
-  update public.games set finished_at = now(), total_score = total where id = g.id;
-
-  if g.user_id is not null then
-    insert into public.users (id, total_games, high_score, avg_score)
-    values (g.user_id, 0, 0, 0)
-    on conflict (id) do nothing;
-
-    select * into prev from public.users where id = g.user_id for update;
-    update public.users set
-      total_games = prev.total_games + 1,
-      high_score = greatest(prev.high_score, total),
-      avg_score = round(((prev.avg_score::numeric * prev.total_games) + total) / (prev.total_games + 1))::integer
-    where id = g.user_id;
-  end if;
-
+  total := public.finalize_game(g.id, false);
   return jsonb_build_object('gameId', g.id, 'totalScore', total,
     'maxScore', 5000 * array_length(g.place_ids, 1), 'rounds', array_length(g.place_ids, 1));
 end;
 $$;
 
--- Photo credits for /credits: no names or coordinates, random order.
-create or replace function public.photo_credits()
-returns table (author text, license text, source text, source_url text)
+-- Photo credits for /credits: author, license and source site only, in
+-- random order. No names, coordinates or per-file links — Commons file
+-- names often name the building; each photo's file link is shown on the
+-- results screen right after that photo is guessed.
+drop function if exists public.photo_credits();
+create function public.photo_credits()
+returns table (author text, license text, source text)
 language sql
 volatile
 security definer
 set search_path = ''
 as $$
-  select p.author, p.license, p.source, p.source_url
+  select p.author, p.license, p.source
   from public.places p
   where p.active and p.lat is not null
   order by random();
 $$;
 
+revoke all on function public.round_seconds() from public;
 revoke all on function public.start_game() from public;
 revoke all on function public.get_game(uuid) from public;
 revoke all on function public.submit_guess(uuid, integer, double precision, double precision) from public;
 revoke all on function public.finish_game(uuid) from public;
 revoke all on function public.photo_credits() from public;
+grant execute on function public.round_seconds() to anon, authenticated;
 grant execute on function public.start_game() to anon, authenticated;
 grant execute on function public.get_game(uuid) to anon, authenticated;
 grant execute on function public.submit_guess(uuid, integer, double precision, double precision) to anon, authenticated;

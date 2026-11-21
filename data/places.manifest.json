@@ -1,0 +1,930 @@
+{
+  "note": "Repo-only backup of curated places. Deliberately has NO image paths/file names, so it cannot map served images to answers. Never serve or import this from the app.",
+  "generated_at": "2026-11-21T16:52:41.374Z",
+  "origin": "places table",
+  "count": 41,
+  "places": [
+    {
+      "source": "wikimedia",
+      "source_id": "112340414",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Northeastern_University_in_fall_2021.jpg",
+      "author": "Sdkb",
+      "license": "CC BY-SA 4.0 (text blurred)",
+      "attribution": "Photo: Sdkb, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "Behrakis Health Sciences Center",
+      "notes": null,
+      "lat": 42.337149,
+      "lng": -71.091568,
+      "heading": null,
+      "difficulty": 2,
+      "crop": null,
+      "redact": [
+        {
+          "left": 0.782,
+          "top": 0.68,
+          "width": 0.117,
+          "height": 0.06
+        }
+      ]
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "112340517",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Museum_of_Fine_Arts,_Boston_in_November_2021.jpg",
+      "author": "Sdkb",
+      "license": "CC BY-SA 4.0 (text blurred)",
+      "attribution": "Photo: Sdkb, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "Museum of Fine Arts",
+      "notes": "The Museum of Fine Arts, Boston was founded in 1870.",
+      "lat": 42.33845,
+      "lng": -71.093791,
+      "heading": null,
+      "difficulty": 1,
+      "crop": null,
+      "redact": [
+        {
+          "left": 0.409,
+          "top": 0.34,
+          "width": 0.161,
+          "height": 0.08
+        },
+        {
+          "left": 0.43,
+          "top": 0.34,
+          "width": 0.15,
+          "height": 0.08
+        }
+      ]
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "114732749",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Stony_Brook_easement_through_NEU,_July_2021.jpg",
+      "author": "Pi.1415926535",
+      "license": "CC BY-SA 4.0",
+      "attribution": "Photo: Pi.1415926535, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "Stony Brook Easement path",
+      "notes": null,
+      "lat": 42.341194,
+      "lng": -71.091849,
+      "heading": null,
+      "difficulty": 3,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "133922475",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Dodge_Hall_Boston_MA_2023-06-26_15-19-22.jpg",
+      "author": "G. Edward Johnson",
+      "license": "CC BY 4.0 (text blurred)",
+      "attribution": "Photo: G. Edward Johnson, CC BY 4.0, via Wikimedia Commons",
+      "name": "Dodge Hall",
+      "notes": null,
+      "lat": 42.340107,
+      "lng": -71.08855,
+      "heading": null,
+      "difficulty": 2,
+      "crop": null,
+      "redact": [
+        {
+          "left": 0.4585,
+          "top": 0.48,
+          "width": 0.0785,
+          "height": 0.06
+        },
+        {
+          "left": 0.4575,
+          "top": 0.48,
+          "width": 0.084,
+          "height": 0.06
+        },
+        {
+          "left": 0.4855,
+          "top": 0.53,
+          "width": 0.041,
+          "height": 0.04
+        },
+        {
+          "left": 0.479,
+          "top": 0.53,
+          "width": 0.0465,
+          "height": 0.04
+        }
+      ]
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "144699381",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Ruggles_Paul_Goodnight.jpg",
+      "author": "Maxxbeckmann",
+      "license": "CC BY-SA 4.0",
+      "attribution": "Photo: Maxxbeckmann, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "Ruggles Station",
+      "notes": "The colorful mural over this entrance is by Boston artist Paul Goodnight.",
+      "lat": 42.335906,
+      "lng": -71.088944,
+      "heading": null,
+      "difficulty": 2,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "157491040",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Northeastern_University_Eastbound_MBTA_Green_Line_Platform,_January_2025.jpg",
+      "author": "IliketrainsR211T",
+      "license": "CC BY 4.0 (text blurred)",
+      "attribution": "Photo: IliketrainsR211T, CC BY 4.0, via Wikimedia Commons",
+      "name": "Northeastern Station",
+      "notes": "Northeastern station is a surface stop on the Green Line E branch in the median of Huntington Avenue.",
+      "lat": 42.340233,
+      "lng": -71.089028,
+      "heading": null,
+      "difficulty": 2,
+      "crop": null,
+      "redact": [
+        {
+          "left": 0.2275,
+          "top": 0.47,
+          "width": 0.1115,
+          "height": 0.07
+        }
+      ]
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "162602801",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Ruggles_Station_lower_busway_March_2025.jpg",
+      "author": "4300streetcar",
+      "license": "CC BY 4.0 (text blurred)",
+      "attribution": "Photo: 4300streetcar, CC BY 4.0, via Wikimedia Commons",
+      "name": "Ruggles Station busway",
+      "notes": null,
+      "lat": 42.33606,
+      "lng": -71.08953,
+      "heading": null,
+      "difficulty": 2,
+      "crop": null,
+      "redact": [
+        {
+          "left": 0.683,
+          "top": 0.45,
+          "width": 0.095,
+          "height": 0.07
+        },
+        {
+          "left": 0.0125,
+          "top": 0.495,
+          "width": 0.0685,
+          "height": 0.1
+        }
+      ]
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "170113665",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Northeastern_University_EXP_building_July_2025.jpg",
+      "author": "4300streetcar",
+      "license": "CC BY 4.0",
+      "attribution": "Photo: 4300streetcar, CC BY 4.0, via Wikimedia Commons",
+      "name": "EXP",
+      "notes": null,
+      "lat": 42.336807,
+      "lng": -71.088518,
+      "heading": null,
+      "difficulty": 1,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "175716048",
+      "source_url": "https://commons.wikimedia.org/wiki/File:West_side_of_Snell_Library,_Northeastern_University_August_2025.jpg",
+      "author": "4300streetcar",
+      "license": "CC BY 4.0 (cropped)",
+      "attribution": "Photo: 4300streetcar, CC BY 4.0, via Wikimedia Commons",
+      "name": "Snell Library",
+      "notes": null,
+      "lat": 42.3382,
+      "lng": -71.0885,
+      "heading": null,
+      "difficulty": 2,
+      "crop": {
+        "left": 0,
+        "top": 0,
+        "width": 0.57,
+        "height": 1
+      },
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "179289154",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Khoury_College_of_Computer_Sciences_-_Northeastern_University_(54954548800).jpg",
+      "author": "ajay_suresh",
+      "license": "CC BY 4.0",
+      "attribution": "Photo: ajay_suresh, CC BY 4.0, via Wikimedia Commons",
+      "name": "West Village H",
+      "notes": "West Village H houses Khoury College of Computer Sciences.",
+      "lat": 42.339413,
+      "lng": -71.091853,
+      "heading": null,
+      "difficulty": 2,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "179289155",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Northeastern_University_School_of_Pharmacy_(54954488779).jpg",
+      "author": "ajay_suresh",
+      "license": "CC BY 4.0",
+      "attribution": "Photo: ajay_suresh, CC BY 4.0, via Wikimedia Commons",
+      "name": "140 The Fenway",
+      "notes": null,
+      "lat": 42.3402,
+      "lng": -71.091609,
+      "heading": null,
+      "difficulty": 3,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "179289163",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Snell_Library_-_Northeastern_University_(54954549030).jpg",
+      "author": "ajay_suresh",
+      "license": "CC BY 4.0 (cropped)",
+      "attribution": "Photo: ajay_suresh, CC BY 4.0, via Wikimedia Commons",
+      "name": "Snell Library",
+      "notes": null,
+      "lat": 42.338736,
+      "lng": -71.088534,
+      "heading": null,
+      "difficulty": 2,
+      "crop": {
+        "left": 0,
+        "top": 0,
+        "width": 1,
+        "height": 0.7
+      },
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "179289164",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Snell_Engineering_Center_-_Northeastern_University_(54954549090).jpg",
+      "author": "ajay_suresh",
+      "license": "CC BY 4.0 (text blurred)",
+      "attribution": "Photo: ajay_suresh, CC BY 4.0, via Wikimedia Commons",
+      "name": "Snell Engineering Center",
+      "notes": null,
+      "lat": 42.338316,
+      "lng": -71.088317,
+      "heading": null,
+      "difficulty": 2,
+      "crop": null,
+      "redact": [
+        {
+          "left": 0.6115,
+          "top": 0.67,
+          "width": 0.128,
+          "height": 0.08
+        }
+      ]
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "179289170",
+      "source_url": "https://commons.wikimedia.org/wiki/File:ISEC_Pedestrian_Bridge_-_Northeastern_University_(54954549020).jpg",
+      "author": "ajay_suresh",
+      "license": "CC BY 4.0",
+      "attribution": "Photo: ajay_suresh, CC BY 4.0, via Wikimedia Commons",
+      "name": "ISEC Bridge",
+      "notes": null,
+      "lat": 42.337958,
+      "lng": -71.088306,
+      "heading": null,
+      "difficulty": 1,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "18527002",
+      "source_url": "https://commons.wikimedia.org/wiki/File:2009_HuntingtonAve_Boston_4029503996.jpg",
+      "author": "Jeff Dlouhy from Boston, MA, United States",
+      "license": "CC BY 2.0 (cropped, text blurred)",
+      "attribution": "Photo: Jeff Dlouhy from Boston, MA, United States, CC BY 2.0, via Wikimedia Commons",
+      "name": "Huntington Avenue",
+      "notes": null,
+      "lat": 42.34,
+      "lng": -71.090278,
+      "heading": null,
+      "difficulty": 2,
+      "crop": {
+        "left": 0.32,
+        "top": 0,
+        "width": 0.64,
+        "height": 1
+      },
+      "redact": [
+        {
+          "left": 0.815,
+          "top": 0.5,
+          "width": 0.185,
+          "height": 0.07
+        }
+      ]
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "19157691",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Platform_at_Massachusetts_Avenue_station_(3),_December_2011.jpg",
+      "author": "Pi.1415926535",
+      "license": "CC BY-SA 3.0 (text blurred)",
+      "attribution": "Photo: Pi.1415926535, CC BY-SA 3.0, via Wikimedia Commons",
+      "name": "Massachusetts Avenue Station",
+      "notes": null,
+      "lat": 42.340409,
+      "lng": -71.084759,
+      "heading": null,
+      "difficulty": 3,
+      "crop": null,
+      "redact": [
+        {
+          "left": 0.4575,
+          "top": 0.36,
+          "width": 0.1335,
+          "height": 0.06
+        }
+      ]
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "195034034",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Stairs_from_Ruggles_Street_to_Ryder_Hall_walkway,_June_2026.jpg",
+      "author": "Pi.1415926535",
+      "license": "CC BY-SA 4.0",
+      "attribution": "Photo: Pi.1415926535, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "Ryder Hall walkway",
+      "notes": null,
+      "lat": 42.336027,
+      "lng": -71.090546,
+      "heading": null,
+      "difficulty": 3,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "195034112",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Upper_busway_at_Ruggles_station,_June_2026.jpg",
+      "author": "Pi.1415926535",
+      "license": "CC BY-SA 4.0",
+      "attribution": "Photo: Pi.1415926535, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "Ruggles Station busway",
+      "notes": null,
+      "lat": 42.33597,
+      "lng": -71.090401,
+      "heading": null,
+      "difficulty": 2,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "195034153",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Ruggles_station_from_the_southwest,_June_2026.jpg",
+      "author": "Pi.1415926535",
+      "license": "CC BY-SA 4.0",
+      "attribution": "Photo: Pi.1415926535, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "Ruggles Station",
+      "notes": "Ruggles opened in 1987 when the Orange Line was moved onto the Southwest Corridor.",
+      "lat": 42.33587,
+      "lng": -71.090302,
+      "heading": null,
+      "difficulty": 2,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "4319375",
+      "source_url": "https://commons.wikimedia.org/wiki/File:NEConservatory3.JPG",
+      "author": "Biruitorul",
+      "license": "Public domain (cropped, text blurred)",
+      "attribution": "Photo: Biruitorul, Public domain, via Wikimedia Commons",
+      "name": "New England Conservatory",
+      "notes": null,
+      "lat": 42.340556,
+      "lng": -71.086944,
+      "heading": null,
+      "difficulty": 2,
+      "crop": {
+        "left": 0.4,
+        "top": 0,
+        "width": 0.6,
+        "height": 1
+      },
+      "redact": [
+        {
+          "left": 0.22,
+          "top": 0.7435,
+          "width": 0.08,
+          "height": 0.073
+        }
+      ]
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "53960067",
+      "source_url": "https://commons.wikimedia.org/wiki/File:MBTA_right_of_way_along_Ruggles_Street,_December_2016.JPG",
+      "author": "Pi.1415926535",
+      "license": "CC BY-SA 3.0",
+      "attribution": "Photo: Pi.1415926535, CC BY-SA 3.0, via Wikimedia Commons",
+      "name": "West Village",
+      "notes": null,
+      "lat": 42.336827,
+      "lng": -71.092867,
+      "heading": null,
+      "difficulty": 3,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "57080697",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Fenway-Kenmore,_Boston,_MA,_USA_-_panoramio_(28).jpg",
+      "author": "Doug Olson",
+      "license": "CC BY-SA 3.0",
+      "attribution": "Photo: Doug Olson, CC BY-SA 3.0, via Wikimedia Commons",
+      "name": "West Village Quad",
+      "notes": null,
+      "lat": 42.337453,
+      "lng": -71.092567,
+      "heading": null,
+      "difficulty": 1,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "57080701",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Fenway-Kenmore,_Boston,_MA,_USA_-_panoramio_(29).jpg",
+      "author": "Doug Olson",
+      "license": "CC BY-SA 3.0 (cropped)",
+      "attribution": "Photo: Doug Olson, CC BY-SA 3.0, via Wikimedia Commons",
+      "name": "Speare Commons Wiffle Ball Field",
+      "notes": null,
+      "lat": 42.34033,
+      "lng": -71.089488,
+      "heading": null,
+      "difficulty": 2,
+      "crop": {
+        "left": 0.03,
+        "top": 0.345,
+        "width": 0.94,
+        "height": 0.655
+      },
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "57080708",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Fenway-Kenmore,_Boston,_MA,_USA_-_panoramio_(30).jpg",
+      "author": "Doug Olson",
+      "license": "CC BY-SA 3.0",
+      "attribution": "Photo: Doug Olson, CC BY-SA 3.0, via Wikimedia Commons",
+      "name": "Centennial Common",
+      "notes": null,
+      "lat": 42.33714,
+      "lng": -71.091171,
+      "heading": null,
+      "difficulty": 2,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "63822034",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Ruggles_Station_panorama.jpg",
+      "author": "Edward Orde",
+      "license": "CC BY-SA 4.0 (text blurred)",
+      "attribution": "Photo: Edward Orde, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "Ruggles Station from International Village",
+      "notes": "Ruggles opened in 1987 when the Orange Line was moved onto the Southwest Corridor.",
+      "lat": 42.335,
+      "lng": -71.088889,
+      "heading": null,
+      "difficulty": 2,
+      "crop": null,
+      "redact": [
+        {
+          "left": 0.6335,
+          "top": 0.46,
+          "width": 0.1005,
+          "height": 0.06
+        },
+        {
+          "left": 0.365,
+          "top": 0.44,
+          "width": 0.1115,
+          "height": 0.05
+        }
+      ]
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "75952799",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Museum_of_Fine_Arts_Boston,_Huntington_Ave_entrance_at_night.jpg",
+      "author": "Kenneth C. Zirkel",
+      "license": "CC BY-SA 4.0 (text blurred)",
+      "attribution": "Photo: Kenneth C. Zirkel, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "Museum of Fine Arts",
+      "notes": "Cyrus Dallin's statue Appeal to the Great Spirit has stood at the MFA's Huntington Avenue entrance since 1912.",
+      "lat": 42.338725,
+      "lng": -71.093633,
+      "heading": null,
+      "difficulty": 1,
+      "crop": null,
+      "redact": [
+        {
+          "left": 0.5125,
+          "top": 0.17,
+          "width": 0.2875,
+          "height": 0.07
+        },
+        {
+          "left": 0.87,
+          "top": 0.59,
+          "width": 0.1115,
+          "height": 0.09
+        }
+      ]
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "76375042",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Lightview_Apartments,_January_2019.jpg",
+      "author": "Edward Orde",
+      "license": "CC BY-SA 4.0",
+      "attribution": "Photo: Edward Orde, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "Lightview",
+      "notes": null,
+      "lat": 42.337386,
+      "lng": -71.086172,
+      "heading": null,
+      "difficulty": 3,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "76375043",
+      "source_url": "https://commons.wikimedia.org/wiki/File:ISEC_Northeastern_2.jpg",
+      "author": "Edward Orde",
+      "license": "CC BY-SA 4.0 (text blurred)",
+      "attribution": "Photo: Edward Orde, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "ISEC",
+      "notes": null,
+      "lat": 42.337224,
+      "lng": -71.086883,
+      "heading": null,
+      "difficulty": 1,
+      "crop": null,
+      "redact": [
+        {
+          "left": 0.8315,
+          "top": 0.72,
+          "width": 0.15,
+          "height": 0.07
+        }
+      ]
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "77175120",
+      "source_url": "https://commons.wikimedia.org/wiki/File:New_England_Conservatory_of_Music_Boston.jpg",
+      "author": "Beyond My Ken",
+      "license": "CC BY-SA 4.0 (text blurred)",
+      "attribution": "Photo: Beyond My Ken, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "Jordan Hall (New England Conservatory)",
+      "notes": "Jordan Hall opened in 1903 and is a National Historic Landmark.",
+      "lat": 42.340961,
+      "lng": -71.087042,
+      "heading": null,
+      "difficulty": 2,
+      "crop": null,
+      "redact": [
+        {
+          "left": 0.057,
+          "top": 0.65,
+          "width": 0.139,
+          "height": 0.07
+        },
+        {
+          "left": 0.8205,
+          "top": 0.77,
+          "width": 0.073,
+          "height": 0.08
+        }
+      ]
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "81116063",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Commuter_rail_platform_at_Ruggles_station,_July_2019.JPG",
+      "author": "Pi.1415926535",
+      "license": "CC BY-SA 3.0",
+      "attribution": "Photo: Pi.1415926535, CC BY-SA 3.0, via Wikimedia Commons",
+      "name": "Ruggles Station commuter rail platform",
+      "notes": null,
+      "lat": 42.336106,
+      "lng": -71.089755,
+      "heading": null,
+      "difficulty": 3,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "83217849",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Pierre_Lallement_Bike_Path,_South_End,_Boston_MA.jpg",
+      "author": "John Phelan",
+      "license": "CC BY-SA 4.0 (cropped, text blurred)",
+      "attribution": "Photo: John Phelan, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "Southwest Corridor Park",
+      "notes": "This stretch of bike path is named for Pierre Lallement, a pedal-bicycle pioneer who lived in Boston.",
+      "lat": 42.337381,
+      "lng": -71.086578,
+      "heading": null,
+      "difficulty": 2,
+      "crop": {
+        "left": 0.3,
+        "top": 0,
+        "width": 0.7,
+        "height": 1
+      },
+      "redact": [
+        {
+          "left": 0.18,
+          "top": 0.3925,
+          "width": 0.08,
+          "height": 0.0785
+        }
+      ]
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "84626802",
+      "source_url": "https://commons.wikimedia.org/wiki/File:ISEC_Pedestrian_Bridge_05.jpg",
+      "author": "Edward Orde",
+      "license": "CC BY-SA 4.0",
+      "attribution": "Photo: Edward Orde, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "ISEC Bridge",
+      "notes": null,
+      "lat": 42.33723,
+      "lng": -71.086761,
+      "heading": null,
+      "difficulty": 2,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "90849832",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Northeastern_ISEC_Plaza_(1).jpg",
+      "author": "Edward Orde",
+      "license": "CC BY-SA 4.0 (text blurred)",
+      "attribution": "Photo: Edward Orde, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "ISEC",
+      "notes": null,
+      "lat": 42.33724,
+      "lng": -71.086294,
+      "heading": null,
+      "difficulty": 1,
+      "crop": null,
+      "redact": [
+        {
+          "left": 0,
+          "top": 0.47,
+          "width": 0.141,
+          "height": 0.06
+        },
+        {
+          "left": 0.5895,
+          "top": 0.57,
+          "width": 0.062,
+          "height": 0.06
+        },
+        {
+          "left": 0.5945,
+          "top": 0.53,
+          "width": 0.052,
+          "height": 0.05
+        },
+        {
+          "left": 0.941,
+          "top": 0.505,
+          "width": 0.0575,
+          "height": 0.06
+        }
+      ]
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "90853563",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Curry_Student_Center_West_Entrance.jpg",
+      "author": "Edward Orde",
+      "license": "CC BY-SA 4.0 (cropped)",
+      "attribution": "Photo: Edward Orde, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "Curry Student Center",
+      "notes": null,
+      "lat": 42.339168,
+      "lng": -71.088091,
+      "heading": null,
+      "difficulty": 2,
+      "crop": {
+        "left": 0.42,
+        "top": 0,
+        "width": 0.58,
+        "height": 1
+      },
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "90853566",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Northeastern_University_Kariotis_Hall.jpg",
+      "author": "Edward Orde",
+      "license": "CC BY-SA 4.0 (cropped)",
+      "attribution": "Photo: Edward Orde, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "Kariotis Hall",
+      "notes": null,
+      "lat": 42.338863,
+      "lng": -71.091138,
+      "heading": null,
+      "difficulty": 2,
+      "crop": {
+        "left": 0.49,
+        "top": 0.1,
+        "width": 0.51,
+        "height": 0.9
+      },
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "90853568",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Huntington_Ave_at_Northeastern_University.jpg",
+      "author": "Edward Orde",
+      "license": "CC BY-SA 4.0",
+      "attribution": "Photo: Edward Orde, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "Huntington Avenue",
+      "notes": null,
+      "lat": 42.340251,
+      "lng": -71.088737,
+      "heading": null,
+      "difficulty": 2,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "90853573",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Northeastern_University_Lake_Hall.jpg",
+      "author": "Edward Orde",
+      "license": "CC BY-SA 4.0 (cropped, text blurred)",
+      "attribution": "Photo: Edward Orde, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "Lake Hall",
+      "notes": null,
+      "lat": 42.338399,
+      "lng": -71.091136,
+      "heading": null,
+      "difficulty": 2,
+      "crop": {
+        "left": 0,
+        "top": 0.445,
+        "width": 0.83,
+        "height": 0.555
+      },
+      "redact": [
+        {
+          "left": 0.431,
+          "top": 0.19,
+          "width": 0.0565,
+          "height": 0.07
+        },
+        {
+          "left": 0.441,
+          "top": 0.19,
+          "width": 0.0455,
+          "height": 0.07
+        },
+        {
+          "left": 0.5235,
+          "top": 0.55,
+          "width": 0.0675,
+          "height": 0.11
+        }
+      ]
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "90853575",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Northeastern_University_Latinx_Student_Cultural_Center.jpg",
+      "author": "Edward Orde",
+      "license": "CC BY-SA 4.0",
+      "attribution": "Photo: Edward Orde, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "Latinx Student Cultural Center",
+      "notes": null,
+      "lat": 42.338382,
+      "lng": -71.090086,
+      "heading": null,
+      "difficulty": 2,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "90853583",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Northeastern_University_Veterans_Memorial_2.jpg",
+      "author": "Edward Orde",
+      "license": "CC BY-SA 4.0 (cropped)",
+      "attribution": "Photo: Edward Orde, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "Veterans Memorial",
+      "notes": null,
+      "lat": 42.33764,
+      "lng": -71.089437,
+      "heading": null,
+      "difficulty": 2,
+      "crop": {
+        "left": 0.44,
+        "top": 0,
+        "width": 0.56,
+        "height": 1
+      },
+      "redact": null
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "90853591",
+      "source_url": "https://commons.wikimedia.org/wiki/File:West_Village_C_Entrance,_Northeastern_University.jpg",
+      "author": "Edward Orde",
+      "license": "CC BY-SA 4.0 (text blurred)",
+      "attribution": "Photo: Edward Orde, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "West Village C",
+      "notes": null,
+      "lat": 42.337268,
+      "lng": -71.092677,
+      "heading": null,
+      "difficulty": 2,
+      "crop": null,
+      "redact": [
+        {
+          "left": 0.464,
+          "top": 0.71,
+          "width": 0.0565,
+          "height": 0.06
+        },
+        {
+          "left": 0.463,
+          "top": 0.71,
+          "width": 0.0565,
+          "height": 0.06
+        }
+      ]
+    },
+    {
+      "source": "wikimedia",
+      "source_id": "90853592",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Northeastern_University_West_Village_C.jpg",
+      "author": "Edward Orde",
+      "license": "CC BY-SA 4.0 (text blurred)",
+      "attribution": "Photo: Edward Orde, CC BY-SA 4.0, via Wikimedia Commons",
+      "name": "West Village C",
+      "notes": null,
+      "lat": 42.337687,
+      "lng": -71.092464,
+      "heading": null,
+      "difficulty": 2,
+      "crop": null,
+      "redact": [
+        {
+          "left": 0.2055,
+          "top": 0.66,
+          "width": 0.073,
+          "height": 0.07
+        },
+        {
+          "left": 0.0955,
+          "top": 0.67,
+          "width": 0.051,
+          "height": 0.04
+        }
+      ]
+    }
+  ]
+}

@@ -125,7 +125,15 @@ export async function rejectCandidate(id: number, edits: CandidateEdits = {}): P
 /**
  * Save edits, then (first time) download -> processImage (strip metadata) ->
  * upload `<uuid>.webp` to `images` -> upsert the places row on (source, source_id).
- * Already-published candidates just get their places row updated.
+ *
+ * Already-published candidates only get the fields this form edits (name,
+ * notes, difficulty, lat, lng, active) copied to their places row. License,
+ * author, source_url and the image are never touched there: the script
+ * pipeline may have cropped/blurred the photo and written "(cropped, text
+ * blurred)" into the license, which the raw candidate row doesn't know about.
+ *
+ * The UI path cannot crop or redact, so candidates flagged as having a sign /
+ * giveaway are refused (reject them, or fix them via scripts/places/).
  */
 export async function approveAndPublish(id: number, edits: CandidateEdits = {}): Promise<ActionResult<CandidateRow>> {
   try {
@@ -134,19 +142,18 @@ export async function approveAndPublish(id: number, edits: CandidateEdits = {}):
     cand = await saveCandidate(supabase, cand, edits)
 
     if (cand.difficulty == null) throw new Error("set a difficulty (1-3) before publishing")
+    if (cand.ai_scores?.has_sign === true || cand.ai_scores?.giveaway === true) {
+      throw new Error(
+        "This photo is flagged as having a sign / giveaway and the admin UI can't crop or blur it. " +
+          "Reject it, or crop/redact it via the script pipeline (data/curation + places:select + places:publish)."
+      )
+    }
 
-    const placeFields = {
+    const editableFields = {
       lat: cand.lat,
       lng: cand.lng,
       name: cand.name,
       notes: cand.notes,
-      source: cand.source,
-      source_id: cand.source_id,
-      source_url: cand.source_url,
-      author: cand.author,
-      license: cand.license,
-      attribution: cand.attribution,
-      heading: cand.heading,
       difficulty: cand.difficulty,
       active: true,
     }
@@ -165,9 +172,20 @@ export async function approveAndPublish(id: number, edits: CandidateEdits = {}):
     }
 
     if (placeId != null) {
-      const { error } = await supabase.from("places").update(placeFields).eq("id", placeId)
+      const { error } = await supabase.from("places").update(editableFields).eq("id", placeId)
       if (error) throw new Error(`places update failed: ${error.message}`)
     } else {
+      const placeFields = {
+        ...editableFields,
+        source: cand.source,
+        source_id: cand.source_id,
+        // own photos point at a local file; never expose that path as a public link
+        source_url: cand.source === "own" ? null : cand.source_url,
+        author: cand.author,
+        license: cand.license,
+        attribution: cand.attribution,
+        heading: cand.heading,
+      }
       const url = new URL(cand.image_remote_url)
       if (url.protocol !== "https:") {
         throw new Error("only https images can be published from the UI (use npm run places:publish for own photos)")

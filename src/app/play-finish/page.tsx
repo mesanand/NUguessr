@@ -146,7 +146,9 @@ function PlayFinish() {
                         ? "Not played"
                         : r.guess === null || r.distanceYards === null
                           ? "Time's up"
-                          : `${r.distanceYards.toLocaleString()} ${r.distanceYards === 1 ? "yard" : "yards"} away`}
+                          : r.late
+                            ? "Too late"
+                            : `${r.distanceYards.toLocaleString()} ${r.distanceYards === 1 ? "yard" : "yards"} away`}
                     </p>
                   </div>
                   <span className="shrink-0 font-semibold tabular-nums">

@@ -25,21 +25,38 @@ export interface RoundResult {
   /** null when the round timed out without a guess */
   distanceYards: number | null
   points: number
+  /** Guess arrived after the server-side deadline: scored 0. */
+  late?: boolean
   credit: PhotoCredit
 }
 
 export interface RoundPublic {
   roundIndex: number
-  /** Absolute public URL of the (metadata-stripped, UUID-named) photo */
-  imageUrl: string
+  /**
+   * Absolute public URL of the (metadata-stripped, UUID-named) photo.
+   * null for rounds that haven't started yet: photos are revealed one round
+   * at a time (call getGame after a round's result to reveal the next).
+   */
+  imageUrl: string | null
   /** Present only once this round has been submitted */
   result: RoundResult | null
+}
+
+export interface CurrentRound {
+  roundIndex: number
+  /** Server deadline for this round (epoch ms). Guesses after it (+ small grace) score 0. */
+  deadline: number
+  /** Server clock when this response was made (epoch ms), to correct client clock skew. */
+  serverNow: number
 }
 
 export interface GameState {
   gameId: string
   finished: boolean
   totalScore: number | null
+  roundSeconds: number
+  /** The round being played now (its clock is running), or null when finished/all submitted. */
+  currentRound: CurrentRound | null
   rounds: RoundPublic[]
 }
 

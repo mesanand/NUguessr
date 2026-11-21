@@ -3,7 +3,7 @@
 //  1. list=geosearch (namespace 6) on a grid of centers covering CAMPUS_BOUNDS;
 //     any center that hits the 500 cap is split into 4 smaller circles.
 //  2. prop=imageinfo|coordinates in batches of 50 pageids (cached in
-//     data/commons/info.json â€” rerun with --refresh to refetch).
+//     data/commons/info.json - rerun with --refresh to refetch).
 //  3. Filters: free license, raster photo mime, width >= 1000, on campus
 //     (lib/campus-filter.ts), not a map/logo/scan/portrait/interior/historic.
 //  4. Thins same-author bursts (<15 m, same day), merges into

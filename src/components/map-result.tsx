@@ -23,7 +23,8 @@ import CampusBasemap, { BASEMAP_BACKGROUND } from "@/components/game/campus-base
 
 interface MapResultProps {
   result: RoundResult
-  imageUrl: string
+  /** null if the server didn't return the photo (shouldn't happen for submitted rounds) */
+  imageUrl: string | null
   /** 1-based round number */
   round: number
   totalRounds: number
@@ -49,7 +50,8 @@ export default function MapResult({
 }: MapResultProps) {
   const { actual, guess, points, distanceYards } = result
   const timedOut = guess === null
-  const isPerfect = !timedOut && points >= MAX_POINTS_PER_ROUND
+  const late = !timedOut && result.late === true
+  const isPerfect = !timedOut && !late && points >= MAX_POINTS_PER_ROUND
   const name = cleanText(result.name)
   const notes = result.notes?.trim() || null
 
@@ -125,14 +127,16 @@ export default function MapResult({
           <div className="flex flex-col gap-4 lg:w-80">
             <Card className="overflow-hidden rounded-2xl border-border shadow-sm">
               <div className="relative aspect-[4/3] w-full bg-muted">
-                <Image
-                  src={imageUrl}
-                  alt={name ? `Photo of ${name}` : "Round photo"}
-                  fill
-                  unoptimized
-                  sizes="(min-width: 1024px) 320px, 100vw"
-                  className="object-cover"
-                />
+                {imageUrl && (
+                  <Image
+                    src={imageUrl}
+                    alt={name ? `Photo of ${name}` : "Round photo"}
+                    fill
+                    unoptimized
+                    sizes="(min-width: 1024px) 320px, 100vw"
+                    className="object-cover"
+                  />
+                )}
               </div>
               <CardContent className="p-3">
                 <PhotoCredit credit={result.credit} />
@@ -177,7 +181,18 @@ export default function MapResult({
               {timedOut ? (
                 <span className="inline-flex items-center gap-2">
                   <Clock className="size-4" aria-hidden="true" />
-                  Time&apos;s up â€” 0 points
+                  Time&apos;s up — 0 points
+                </span>
+              ) : late ? (
+                <span className="inline-flex flex-wrap items-center justify-center gap-x-2">
+                  <Clock className="size-4" aria-hidden="true" />
+                  Too late — guesses after the timer don&apos;t count. 0 points.
+                  {distanceYards !== null && (
+                    <span>
+                      (Your guess was {distanceYards.toLocaleString()}{" "}
+                      {distanceYards === 1 ? "yard" : "yards"} away.)
+                    </span>
+                  )}
                 </span>
               ) : distanceYards !== null ? (
                 <>

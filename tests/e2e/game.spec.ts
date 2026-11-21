@@ -11,6 +11,18 @@ fs.mkdirSync(SHOTS, { recursive: true })
 
 const ANSWER_KEYS = /"(lat|lng|name|notes|sourceUrl|source_url|actual|credit|author)"\s*:/
 
+function count(body: string, re: RegExp): number {
+  return (body.match(new RegExp(re.source, "g")) ?? []).length
+}
+
+/** Seconds left on the round timer ("00:41" -> 41). */
+async function timerSeconds(page: Page): Promise<number> {
+  const text = (await page.getByRole("timer").textContent()) ?? ""
+  const m = text.match(/(\d+):(\d+)/)
+  if (!m) throw new Error(`no timer text: ${text}`)
+  return Number(m[1]) * 60 + Number(m[2])
+}
+
 async function shot(page: Page, project: string, step: string) {
   await page.screenshot({ path: path.join(SHOTS, `${project}-${step}.png`), fullPage: false })
 }
@@ -21,8 +33,10 @@ test("play a full game without answer leaks", async ({ page }, testInfo) => {
   test.setTimeout(240_000)
 
   // Record server-action responses (Next sends them with a `next-action` request header).
+  // Photos are revealed one round at a time, so a response while round N is
+  // being guessed ("before-guess-N") may carry results of rounds < N only.
   const actionBodies: { phase: string; body: string }[] = []
-  let phase = "before-guess"
+  let phase = "before-guess-1"
   const tiles: { phase: string; host: string }[] = []
   let basemapLoaded = false
   page.on("response", async (res: Response) => {
@@ -64,6 +78,22 @@ test("play a full game without answer leaks", async ({ page }, testInfo) => {
     expect(html).not.toMatch(ANSWER_KEYS)
     if (round === 1) await shot(page, project, "02-round-photo")
 
+    if (round === 2) {
+      // ---- the round clock lives on the server: reloading mid-round must
+      // not reset the timer to 0:45.
+      await page.waitForTimeout(4000)
+      const before = await timerSeconds(page)
+      expect(before).toBeLessThanOrEqual(42)
+      await page.reload()
+      await expect(photo).toBeVisible({ timeout: 30_000 })
+      await expect(page.getByRole("timer")).toBeVisible()
+      const after = await timerSeconds(page)
+      expect(after, "timer continues after reload").toBeLessThanOrEqual(before)
+      expect(after).toBeGreaterThan(0)
+      expect(await photo.getAttribute("src"), "same photo after reload").toBe(src)
+      await expect(page.getByText(new RegExp(`^${round} / 5$`))).toBeVisible()
+    }
+
     const timeoutRound = round === 3
     if (timeoutRound) {
       // Let the 45 s timer run out without guessing. The timeout submission's
@@ -102,11 +132,17 @@ test("play a full game without answer leaks", async ({ page }, testInfo) => {
     await expect(page.getByText(/points/i).first()).toBeVisible()
     const credit = page.getByText(/^Photo:/)
     await expect(credit).toBeVisible()
-    await expect(credit.getByRole("link")).toHaveAttribute("href", /^https:\/\//)
+    await expect(credit.getByRole("link", { name: /^via / })).toHaveAttribute("href", /^https:\/\//)
+    await expect(credit.getByRole("link", { name: /^(CC|Public domain)/i })).toHaveAttribute(
+      "href",
+      /^https:\/\/creativecommons\.org\/(licenses|publicdomain)\//
+    )
+    await expect(page.getByText(/â€|Â·/)).toHaveCount(0) // no mojibake
 
     if (round < 5) {
+      // The next photo is revealed (and its clock started) only now.
+      phase = `before-guess-${round + 1}`
       await page.getByRole("button", { name: "Start next round" }).click()
-      phase = "before-guess"
     } else {
       await page.getByRole("button", { name: "View results" }).click()
     }
@@ -118,14 +154,25 @@ test("play a full game without answer leaks", async ({ page }, testInfo) => {
   await shot(page, project, "06-finish")
 
   // ---- no answer data in any server-action response before its guess
-  const leaky = actionBodies.filter((a) => a.phase === "before-guess" && ANSWER_KEYS.test(a.body))
-  expect(leaky.map((l) => l.body.slice(0, 200)), "server responses before a guess leak the answer").toEqual([])
-  expect(actionBodies.length).toBeGreaterThan(0)
+  // While round N is open, a response may hold results (and photos) of the
+  // N-1 submitted rounds plus round N's photo, and nothing more.
+  const leaky = actionBodies.filter((a) => {
+    const m = a.phase.match(/^before-guess-(\d+)$/)
+    if (!m) return false
+    const n = Number(m[1])
+    return count(a.body, /"actual"\s*:/) > n - 1 || count(a.body, /"sourceUrl"\s*:/) > n - 1 || count(a.body, /\.webp"/) > n
+  })
+  expect(leaky.map((l) => `${l.phase}: ${l.body.slice(0, 300)}`), "server responses before a guess leak the answer").toEqual([])
+  const firstRound = actionBodies.filter((a) => a.phase === "before-guess-1")
+  expect(firstRound.length).toBeGreaterThan(0)
+  expect(firstRound.filter((a) => ANSWER_KEYS.test(a.body)).map((a) => a.body.slice(0, 200))).toEqual([])
+  // Future photos are never sent ahead of their round.
+  expect(firstRound.every((a) => count(a.body, /\.webp"/) <= 1)).toBe(true)
 
   // ---- guess map: our label-free drawn basemap + Esri satellite; labeled OSM
   // tiles only appear on results maps (after a guess), never while guessing.
   expect(basemapLoaded, "label-free campus basemap loaded").toBe(true)
-  const guessing = tiles.filter((t) => t.phase === "before-guess")
+  const guessing = tiles.filter((t) => t.phase.startsWith("before-guess"))
   expect(guessing.some((t) => t.host.includes("arcgisonline.com")), "satellite tiles loaded").toBe(true)
   expect(guessing.filter((t) => /openstreetmap|cartocdn/.test(t.host)), "labeled tiles while guessing").toEqual([])
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { useUser } from "../../../hooks/use-user";
 import { SignOutButton } from "@/components/signout-button";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useStartGame } from "@/components/game/use-start-game";
 import Image from "next/image";
 import {
   MapPin,
@@ -18,6 +19,7 @@ import {
   Star,
   BarChart2,
   Trophy,
+  Loader2,
 } from "lucide-react"
 export default function ProfilePage() {
   const [isEditingUsername, setIsEditingUsername] = useState(false);
@@ -88,20 +90,6 @@ export default function ProfilePage() {
     }
   }, [user?.id, supabaseClient]);  // Only run when user changes or user.id is available
 
-  // Generate a random link with 5 unique random numbers (between 1 and 55)
-  const randomLink = useMemo(() => {
-    // Create an array of numbers from 1 to 55.
-    const numbers = Array.from({ length: 55 }, (_, i) => i + 1)
-    // Shuffle the numbers using the Fisher-Yates algorithm.
-    for (let i = numbers.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[numbers[i], numbers[j]] = [numbers[j], numbers[i]]
-    }
-    // Take the first 5 numbers and join them with a hyphen.
-    const fiveNumbers = numbers.slice(0, 5)
-    return `/play/${fiveNumbers.join("-")}`
-  }, [])
-
   // Persist the edited username. The original version only toggled local
   // state here and never actually wrote anywhere, so edits vanished on refresh.
   const saveUsername = async () => {
@@ -124,9 +112,8 @@ export default function ProfilePage() {
     router.push("/leaderboards");
   };
 
-  const navigatePlay = () => {
-    router.push(randomLink);
-  };
+  // Same server-recorded game start as the home page.
+  const { start: startGame, pending: startingGame, error: startError } = useStartGame();
 
   const stats = [
     {
@@ -240,9 +227,16 @@ export default function ProfilePage() {
           <Button
             size="lg"
             className="h-12 w-full rounded-lg text-base font-semibold"
-            onClick={navigatePlay}
+            onClick={startGame}
+            disabled={startingGame}
+            aria-busy={startingGame}
           >
-            <MapPin className="mr-2 h-5 w-5" /> Play
+            {startingGame ? (
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            ) : (
+              <MapPin className="mr-2 h-5 w-5" />
+            )}{" "}
+            Play
           </Button>
           <Button
             size="lg"
@@ -253,6 +247,11 @@ export default function ProfilePage() {
             <Trophy className="mr-2 h-5 w-5" /> Leaderboards
           </Button>
         </div>
+        {startError && (
+          <p role="alert" className="mt-3 text-center text-sm text-destructive">
+            {startError}
+          </p>
+        )}
       </main>
     </div>
   );

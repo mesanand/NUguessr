@@ -371,6 +371,13 @@ export function CurateClient({ candidates, placeActive, filter, page, pageCount,
           </p>
         )}
 
+        <p className="text-xs text-muted-foreground">
+          {current.place_id != null
+            ? "Update place only changes name, notes, difficulty and pin; the published photo and credit stay as they are. "
+            : "Publishing here uses the photo as-is (no crop or blur). "}
+          Photos with signs need cropping via the script pipeline.
+        </p>
+
         <div className="grid grid-cols-2 gap-2">
           <Button onClick={() => run("approve")} disabled={pending}>
             <Check aria-hidden="true" />

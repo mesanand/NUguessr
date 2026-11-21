@@ -1,5 +1,5 @@
 /**
- * places:select ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â turn curation decisions into the final publish list.
+ * places:select - turn curation decisions into the final publish list.
  *
  * Reads data/candidates.json + data/curation/batch-*.json (CurationDecision[])
  * and writes data/selected.json for places:publish.
@@ -54,7 +54,19 @@ function editNote(license: string, d: Decision): string {
   return edits.length ? `${license} (${edits.join(", ")})` : license
 }
 
-const normName = (n: string | null) => (n ?? "").toLowerCase().replace(/[^a-z]/g, "")
+/**
+ * Commons originals are often 10+ MB; a standard thumbnail (1920 px wide for
+ * landscape, 1280 px wide for portrait) is plenty for a 2000 px-max game photo
+ * and kinder to Wikimedia. Commons refuses to upscale, so the thumbnail is used
+ * only when the original is WIDER than the requested thumbnail width.
+ */
+function publishUrl(c: Candidate): string {
+  if (c.source !== "wikimedia" || !c.thumb_url || !/\/960px-/.test(c.thumb_url)) return c.image_remote_url
+  const thumbWidth = c.width >= c.height ? 1920 : 1280
+  return c.width > thumbWidth ? c.thumb_url.replace(/\/960px-/, `/${thumbWidth}px-`) : c.image_remote_url
+}
+
+const normName =(n: string | null) => (n ?? "").toLowerCase().replace(/[^a-z]/g, "")
 
 function areaOf(name: string | null) {
   const n = name ?? ""
@@ -131,13 +143,7 @@ function main() {
       source_id: c.source_id,
       // own photos point at a local file; never expose that path as a public link
       source_url: c.source === "own" ? null : c.source_url,
-      // Commons originals are often 10+ MB; the standard 1920px thumbnail is
-      // plenty for a 2000px-max game photo and much kinder to Wikimedia.
-      // (Standard Wikimedia thumbnail widths: 1920 for landscape, 1280 for portrait.)
-      image_remote_url:
-        c.source === "wikimedia" && c.thumb_url && Math.max(c.width, c.height) > 1920
-          ? c.thumb_url.replace(/\/960px-/, c.width >= c.height ? "/1920px-" : "/1280px-")
-          : c.image_remote_url,
+      image_remote_url: publishUrl(c),
       author: c.author,
       // CC licenses require indicating changes; cropped photos say so in the credit.
       license: editNote(c.license, d),
