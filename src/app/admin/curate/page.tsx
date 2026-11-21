@@ -8,6 +8,9 @@ import { CurateClient } from "./curate-client"
 import { CURATE_FILTERS, PAGE_SIZE, type CandidateRow, type CurateFilter } from "./types"
 
 export const dynamic = "force-dynamic"
+// Approve-and-publish downloads and re-encodes a full photo with retries;
+// give the server actions on this page room on Vercel.
+export const maxDuration = 300
 
 const CANDIDATE_COLUMNS =
   "id, source, source_id, source_url, image_remote_url, lat, lng, heading, author, license, attribution, captured_at, width, height, title, suggested_name, name, notes, difficulty, status, review_notes, ai_scores, place_id, created_at, updated_at"

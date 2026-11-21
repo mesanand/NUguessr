@@ -78,7 +78,7 @@ async function main() {
   check("start_game payload has no answer fields", leaks.length === 0, leaks.join(", "))
   check("round 0 photo path is UUID-named", /^([\w-]+\/)?[0-9a-f-]{36}\.webp$/i.test(game.rounds[0].imageUrl ?? ""), String(game.rounds[0].imageUrl))
   check("future rounds' photos are hidden", game.rounds.slice(1).every((r) => r.imageUrl === null))
-  const again = await supabase.rpc("get_game", { p_game_id: game.gameId })
+  const again = await supabase.rpc("get_game", { p_game_id: game.gameId, p_reveal: true })
   check("get_game before guessing has no answer fields", findForbidden(again.data).length === 0)
 
   // 3. Round integrity
@@ -91,18 +91,20 @@ async function main() {
   check("result reveals name + credit", !!first.data?.actual && "name" in (first.data ?? {}) && !!first.data?.credit)
   const dup = await supabase.rpc("submit_guess", { p_game_id: game.gameId, p_round_index: 0, p_guess_lat: 42.3398, p_guess_lng: -71.0892 })
   check("same round cannot be submitted twice", !!dup.error, dup.error?.message)
+  const ro = await supabase.rpc("get_game", { p_game_id: game.gameId })
+  check("read-only get_game (page reload on a result) does not start the next round", ro.data?.currentRound === null && ro.data?.rounds?.[1]?.imageUrl === null, JSON.stringify(ro.data?.currentRound))
   const early1 = await supabase.rpc("submit_guess", { p_game_id: game.gameId, p_round_index: 1, p_guess_lat: 42.34, p_guess_lng: -71.09 })
   check("next round cannot be guessed before it is revealed", early1.error?.message?.includes("round_not_started") ?? false, early1.error?.message)
-  const rev1 = await supabase.rpc("get_game", { p_game_id: game.gameId })
+  const rev1 = await supabase.rpc("get_game", { p_game_id: game.gameId, p_reveal: true })
   check("get_game reveals only the next round", rev1.data?.rounds?.[1]?.imageUrl && rev1.data?.rounds?.[2]?.imageUrl === null && rev1.data?.currentRound?.roundIndex === 1, JSON.stringify(rev1.data?.currentRound))
   check("revealed round still has no answer fields", findForbidden(rev1.data?.rounds?.[1]).length === 0)
   const timeout = await supabase.rpc("submit_guess", { p_game_id: game.gameId, p_round_index: 1 })
   check("timeout scores 0", !timeout.error && timeout.data?.points === 0, timeout.error?.message)
-  await supabase.rpc("get_game", { p_game_id: game.gameId })
+  await supabase.rpc("get_game", { p_game_id: game.gameId, p_reveal: true })
   const bad = await supabase.rpc("submit_guess", { p_game_id: game.gameId, p_round_index: 2, p_guess_lat: 999, p_guess_lng: 0 })
   check("invalid coordinates rejected", !!bad.error, bad.error?.message)
   for (let i = 2; i < 5; i++) {
-    await supabase.rpc("get_game", { p_game_id: game.gameId })
+    await supabase.rpc("get_game", { p_game_id: game.gameId, p_reveal: true })
     await supabase.rpc("submit_guess", { p_game_id: game.gameId, p_round_index: i, p_guess_lat: 42.339, p_guess_lng: -71.089 })
   }
   const fin = await supabase.rpc("finish_game", { p_game_id: game.gameId })

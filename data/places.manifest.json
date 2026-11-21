@@ -1,6 +1,6 @@
 {
   "note": "Repo-only backup of curated places. Deliberately has NO image paths/file names, so it cannot map served images to answers. Never serve or import this from the app.",
-  "generated_at": "2026-11-21T16:52:41.374Z",
+  "generated_at": "2026-11-21T17:04:27.993Z",
   "origin": "places table",
   "count": 41,
   "places": [
@@ -121,7 +121,7 @@
       "license": "CC BY-SA 4.0",
       "attribution": "Photo: Maxxbeckmann, CC BY-SA 4.0, via Wikimedia Commons",
       "name": "Ruggles Station",
-      "notes": "The colorful mural over this entrance is by Boston artist Paul Goodnight.",
+      "notes": null,
       "lat": 42.335906,
       "lng": -71.088944,
       "heading": null,

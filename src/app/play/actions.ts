@@ -55,11 +55,19 @@ export async function startGame(): Promise<ActionResult<GameState>> {
   return { ok: true, data: normalizeGame(data) }
 }
 
-/** Load an existing game (for refresh/resume). Submitted rounds include their results. */
-export async function getGame(gameId: string): Promise<ActionResult<GameState>> {
+/**
+ * Load a game. Submitted rounds include their results. Read-only by default
+ * (safe on page load/refresh); pass `{ reveal: true }` only when the player
+ * presses "Start next round" — that reveals the next photo and starts its
+ * 45 s server clock.
+ */
+export async function getGame(
+  gameId: string,
+  opts: { reveal?: boolean } = {}
+): Promise<ActionResult<GameState>> {
   if (!UUID_RE.test(gameId)) return { ok: false, error: "game_not_found" }
   const supabase = await createClient()
-  const { data, error } = await supabase.rpc("get_game", { p_game_id: gameId })
+  const { data, error } = await supabase.rpc("get_game", { p_game_id: gameId, p_reveal: opts.reveal === true })
   if (error) return { ok: false, error: errorMessage(error) }
   if (!data) return { ok: false, error: "game_not_found" }
   return { ok: true, data: normalizeGame(data) }

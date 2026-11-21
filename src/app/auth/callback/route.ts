@@ -8,7 +8,10 @@ export async function GET(request: Request) {
  
   // Get the authorization code and the 'next' redirect path
   const code = searchParams.get("code")
-  const next = searchParams.get("next") ?? "/"
+  // Only same-site paths: "/x" is fine; "//evil.com", "/\evil.com" or
+  // "@evil.com" would turn `${origin}${next}` into another site.
+  const rawNext = searchParams.get("next") ?? "/"
+  const next = /^\/(?![/\\])/.test(rawNext) ? rawNext : "/"
  
   if (code) {
     // Create a Supabase client
@@ -24,5 +27,5 @@ export async function GET(request: Request) {
   }
  
   // If there's no code or an error occurred, redirect to an error page
-  return NextResponse.redirect(`${origin}/auth/auth-code-error`)
+  return NextResponse.redirect(`${origin}/error`)
 }

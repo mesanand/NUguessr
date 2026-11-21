@@ -6,9 +6,11 @@
 // All state lives on the server (src/app/play/actions.ts). This component only
 // ever holds what the server has revealed: the photo URL of the current round
 // before a guess, and the round result after it. Photos are revealed one round
-// at a time: getGame() reveals the current round and starts its clock on the
-// server, and the timer counts down to that server deadline (corrected for
-// clock skew), so refreshing resumes the same round without resetting it.
+// at a time: getGame(id, { reveal: true }) — only on "Start next round" —
+// reveals the next round and starts its clock on the server. Page loads use
+// a read-only getGame, so a reload mid-round resumes the same clock and a
+// reload on a results screen shows that result again. The timer counts down
+// to the server deadline, corrected for clock skew.
 
 import { useCallback, useEffect, useRef, useState } from "react"
 import Image from "next/image"
@@ -70,12 +72,12 @@ export default function PlayGame({ gameId }: { gameId: string }) {
    */
   const load = useCallback(
     /** Resolves to an error code, or null on success. */
-    async (opts: { showRound?: number; fatal?: boolean } = {}): Promise<string | null> => {
-      const { showRound, fatal = true } = opts
+    async (opts: { showRound?: number; fatal?: boolean; reveal?: boolean } = {}): Promise<string | null> => {
+      const { showRound, fatal = true, reveal = false } = opts
       let res: Awaited<ReturnType<typeof getGame>>
       const sentAt = Date.now()
       try {
-        res = await getGame(gameId)
+        res = await getGame(gameId, { reveal })
       } catch {
         res = { ok: false, error: "unknown_error" }
       }
@@ -120,9 +122,12 @@ export default function PlayGame({ gameId }: { gameId: string }) {
         setRoundIndex(current)
         setPhase({ kind: "guessing", deadline: clientDeadline })
       } else {
-        // Every round submitted but the game isn't finished: show the last result.
+        // No round running: either every round is submitted, or the player
+        // reloaded on a results screen (the next round isn't started until
+        // they press "Start next round"). Show the last submitted result.
         const lastPlayed = g.rounds.map((r) => r.result !== null).lastIndexOf(true)
         if (lastPlayed === -1) {
+          if (!reveal) return load({ ...opts, reveal: true }) // nothing played yet: start round 1
           if (fatal) setPhase({ kind: "error", message: friendlyError(null) })
           return "unknown_error"
         }
@@ -166,7 +171,7 @@ export default function PlayGame({ gameId }: { gameId: string }) {
         } else if (res.error === "round_not_started") {
           // The server hasn't revealed this round (e.g. a stale tab): reveal it
           // now and play it on its own clock.
-          const err = await load({ fatal: false })
+          const err = await load({ fatal: false, reveal: true })
           if (err) setSubmitError(friendlyError(err))
         } else if (res.error === "game_finished") {
           router.replace(finishUrl)
@@ -195,7 +200,7 @@ export default function PlayGame({ gameId }: { gameId: string }) {
     setAdvanceError(null)
     if (!phase.shown.isLastRound) {
       // Reveal the next round on the server (this starts its clock).
-      const err = await load({ fatal: false })
+      const err = await load({ fatal: false, reveal: true })
       if (err) setAdvanceError(friendlyError(err))
       advancingRef.current = false
       setAdvancing(false)

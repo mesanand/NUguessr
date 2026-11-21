@@ -58,7 +58,10 @@ function sqlLit(v: string | number | null): string {
 
 function writeSql(rows: Row[]): string {
   const file = dataPath('candidates.sql')
-  const updates = COLS.filter((c) => c !== 'source' && c !== 'source_id')
+  // Re-pushing must never reset curated fields: the pin (lat/lng/heading) and
+  // the license (which may carry a "(cropped, text blurred)" change note).
+  const KEEP_CURATED = new Set(['source', 'source_id', 'lat', 'lng', 'heading', 'license'])
+  const updates = COLS.filter((c) => !KEEP_CURATED.has(c))
     .map((c) => `${c} = excluded.${c}`)
     .concat('updated_at = now()')
     .join(',\n  ')
@@ -92,7 +95,10 @@ async function main() {
   console.log(`Upserting ${rows.length} candidates to ${new URL(url).host} ...`)
   const sb = createClient(url, key, { auth: { persistSession: false } })
   for (let i = 0; i < rows.length; i += 200) {
-    const { error } = await sb.from('place_candidates').upsert(rows.slice(i, i + 200), { onConflict: 'source,source_id' })
+    // New candidates only: existing rows keep their reviewed/curated values.
+    const { error } = await sb
+      .from('place_candidates')
+      .upsert(rows.slice(i, i + 200), { onConflict: 'source,source_id', ignoreDuplicates: true })
     if (error) throw new Error(`upsert failed at ${i}: ${error.message}`)
     console.log(`  ${Math.min(i + 200, rows.length)}/${rows.length}`)
   }

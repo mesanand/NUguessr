@@ -55,7 +55,13 @@ export interface GameState {
   finished: boolean
   totalScore: number | null
   roundSeconds: number
-  /** The round being played now (its clock is running), or null when finished/all submitted. */
+  /** Number of rounds already submitted. */
+  roundsSubmitted: number
+  /**
+   * The round being played now (revealed, clock running), or null when the
+   * game is finished, all rounds are submitted, or the next round hasn't been
+   * started yet (call getGame(id, { reveal: true }) to start it).
+   */
   currentRound: CurrentRound | null
   rounds: RoundPublic[]
 }

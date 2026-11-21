@@ -50,23 +50,23 @@ async function main() {
 
     const g = await a.client.rpc("start_game")
     const gameId = g.data.gameId as string
-    const peek = await b.client.rpc("get_game", { p_game_id: gameId })
+    const peek = await b.client.rpc("get_game", { p_game_id: gameId, p_reveal: true })
     check("other player cannot load my game", !!peek.error, peek.error?.message)
     const steal = await b.client.rpc("submit_guess", { p_game_id: gameId, p_round_index: 0, p_guess_lat: 42.34, p_guess_lng: -71.09 })
     check("other player cannot submit to my game", !!steal.error, steal.error?.message)
     const anonC = createClient(url, anonKey, { auth: { persistSession: false } })
-    const anonPeek = await anonC.rpc("get_game", { p_game_id: gameId })
+    const anonPeek = await anonC.rpc("get_game", { p_game_id: gameId, p_reveal: true })
     check("anon cannot load a signed-in game", !!anonPeek.error, anonPeek.error?.message)
 
     // Round 0 on time; round 1 after the server deadline (clock moved back via service role).
     const r0 = await a.client.rpc("submit_guess", { p_game_id: gameId, p_round_index: 0, p_guess_lat: 42.339, p_guess_lng: -71.089 })
-    await a.client.rpc("get_game", { p_game_id: gameId })
+    await a.client.rpc("get_game", { p_game_id: gameId, p_reveal: true })
     await admin.from("games").update({ round_started_at: new Date(Date.now() - 120_000).toISOString() }).eq("id", gameId)
     const r1 = await a.client.rpc("submit_guess", { p_game_id: gameId, p_round_index: 1, p_guess_lat: 42.339, p_guess_lng: -71.089 })
     check("on-time guess scores", (r0.data?.points ?? 0) > 0 && r0.data?.late === false, JSON.stringify({ pts: r0.data?.points, late: r0.data?.late }))
     check("guess after the server deadline scores 0 (late)", r1.data?.points === 0 && r1.data?.late === true, r1.error?.message ?? JSON.stringify({ pts: r1.data?.points, late: r1.data?.late }))
     for (let i = 2; i < 5; i++) {
-      await a.client.rpc("get_game", { p_game_id: gameId })
+      await a.client.rpc("get_game", { p_game_id: gameId, p_reveal: true })
       await a.client.rpc("submit_guess", { p_game_id: gameId, p_round_index: i, p_guess_lat: 42.339, p_guess_lng: -71.089 })
     }
     const fin = await a.client.rpc("finish_game", { p_game_id: gameId })
@@ -84,6 +84,13 @@ async function main() {
     check("abandoned game is closed and counted", after2.data?.total_games === 2 && abandoned.data?.abandoned === true && !!abandoned.data?.finished_at, JSON.stringify({ games: after2.data?.total_games, ...abandoned.data }))
     const late2 = await a.client.rpc("submit_guess", { p_game_id: g2.data.gameId, p_round_index: 1, p_guess_lat: 42.34, p_guess_lng: -71.09 })
     check("no submissions to an abandoned game", !!late2.error, late2.error?.message)
+
+    // Parallel starts: the per-user lock leaves exactly one open game.
+    await Promise.all([a.client.rpc("start_game"), a.client.rpc("start_game"), a.client.rpc("start_game")])
+    const open = await admin.from("games").select("id").eq("user_id", a.id).is("finished_at", null)
+    check("parallel start_game leaves one open game", open.data?.length === 1, `${open.data?.length} open`)
+    const longName = await a.client.from("users").update({ username: "x".repeat(40) }).eq("id", a.id).select()
+    check("over-long username rejected", !!longName.error, longName.error?.message)
 
     // Promote via service role (what the admin SQL does) and re-check is_admin.
     await admin.from("users").update({ role: "admin" }).eq("id", b.id)
