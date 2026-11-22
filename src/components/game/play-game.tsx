@@ -13,7 +13,6 @@
 // to the server deadline, corrected for clock skew.
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { AlertCircle, Loader2, RotateCcw } from "lucide-react"
@@ -24,6 +23,8 @@ import Timer from "@/components/timer"
 import MapResult from "@/components/map-result"
 import GuessMap from "./guess-map"
 import { RouteLine } from "./route-line"
+import { ZoomablePhoto, useZoom } from "./zoomable-photo"
+import { isTypingOrModified } from "@/lib/shortcuts"
 import { friendlyError } from "./messages"
 import { useStartGame } from "./use-start-game"
 
@@ -63,6 +64,7 @@ export default function PlayGame({ gameId }: { gameId: string }) {
   const [advanceError, setAdvanceError] = useState<string | null>(null)
 
   const finishUrl = `/play-finish?game=${encodeURIComponent(gameId)}`
+  const zoom = useZoom()
 
   /**
    * Fetch the game from the server; this reveals the current round and starts
@@ -221,6 +223,37 @@ export default function PlayGame({ gameId }: { gameId: string }) {
     setAdvancing(false)
   }, [phase, game, load, gameId, router, finishUrl])
 
+  // Keyboard: Z zooms the photo, Esc zooms back out (while guessing);
+  // Enter or N starts the next round / shows results (on a round result).
+  // The guess map handles M, S, Enter and Esc for itself.
+  const { zoomed, setZoomed, setOrigin } = zoom
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (isTypingOrModified(e) || e.defaultPrevented) return
+      const onControl = (e.target as HTMLElement | null)?.closest?.("button, a, [role=dialog]")
+      const key = e.key.toLowerCase()
+      if (phase.kind === "guessing") {
+        if (key === "z") {
+          e.preventDefault()
+          if (!zoomed) setOrigin({ x: 50, y: 50 })
+          setZoomed(!zoomed)
+        } else if (key === "escape" && zoomed) {
+          setZoomed(false)
+        }
+      } else if (phase.kind === "result" && !onControl && (key === "enter" || key === "n")) {
+        e.preventDefault()
+        void handleNext()
+      }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [phase.kind, zoomed, setZoomed, setOrigin, handleNext])
+
+  // A new round always starts zoomed out.
+  useEffect(() => {
+    setZoomed(false)
+  }, [roundIndex, setZoomed])
+
   if (phase.kind === "loading") {
     return (
       <div className="flex h-[100dvh] flex-col bg-background text-foreground">
@@ -292,15 +325,7 @@ export default function PlayGame({ gameId }: { gameId: string }) {
       <main className="relative min-h-0 flex-1 bg-ink pb-20 sm:pb-0">
         <div className="relative h-full w-full">
           {round?.imageUrl ? (
-            <Image
-              key={round.imageUrl}
-              src={round.imageUrl}
-              alt="Mystery campus location"
-              fill
-              unoptimized
-              priority
-              className="object-contain"
-            />
+            <ZoomablePhoto key={round.imageUrl} src={round.imageUrl} zoom={zoom} />
           ) : (
             <p className="flex h-full items-center justify-center gap-2 text-base text-ink-foreground/80">
               <Loader2 className="size-4 animate-spin" aria-hidden="true" />

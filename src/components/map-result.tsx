@@ -237,6 +237,9 @@ export default function MapResult({
           >
             {isLastRound ? "View results" : "Start next round"}
             {pending ? <Loader2 className="animate-spin" /> : <ArrowRight />}
+            <kbd aria-hidden="true" className="ml-1 hidden rounded border border-primary-foreground/40 px-1.5 font-mono text-xs sm:inline">
+              Enter
+            </kbd>
           </Button>
         </div>
       </main>

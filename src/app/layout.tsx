@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { GlobalShortcuts } from "@/components/global-shortcuts";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,6 +39,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${display.variable} bg-background font-sans text-foreground antialiased`}
       >
         {children}
+        <GlobalShortcuts />
       </body>
     </html>
   );

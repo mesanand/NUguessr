@@ -20,6 +20,7 @@ import {
 } from "@/lib/campus"
 import type { LatLng } from "@/lib/game-types"
 import { guessIcon } from "./leaflet-icons"
+import { isTypingOrModified } from "@/lib/shortcuts"
 import CampusBasemap, { BASEMAP_BACKGROUND } from "./campus-basemap"
 
 // "map" = our own label-free campus drawing (see campus-basemap.tsx);
@@ -83,6 +84,34 @@ export default function GuessMap({ onSubmit, submitting }: GuessMapProps) {
     if (!marker || submitting) return
     onSubmit(marker)
   }
+
+  // Keyboard: M opens/closes the map, S switches map/satellite, Enter
+  // submits the pin, Esc closes the map. (Pins are still dropped by
+  // clicking or tapping the map.)
+  const submitRef = useRef(handleSubmit)
+  submitRef.current = handleSubmit
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (isTypingOrModified(e) || e.defaultPrevented) return
+      if ((e.target as HTMLElement | null)?.closest?.("[role=dialog]")) return
+      const key = e.key.toLowerCase()
+      if (key === "m") {
+        e.preventDefault()
+        setIsExpanded((x) => !x)
+      } else if (key === "s" && isExpanded) {
+        e.preventDefault()
+        setBaseLayer((l) => (l === "map" ? "satellite" : "map"))
+      } else if (key === "escape" && isExpanded) {
+        e.preventDefault()
+        setIsExpanded(false)
+      } else if (key === "enter" && canGuess && !(e.target as HTMLElement | null)?.closest?.("button, a")) {
+        e.preventDefault()
+        submitRef.current()
+      }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [isExpanded, canGuess])
 
   return (
     <div
@@ -172,6 +201,7 @@ export default function GuessMap({ onSubmit, submitting }: GuessMapProps) {
             <span className="inline-flex h-11 items-center gap-2 rounded-md bg-ink px-4 text-sm font-medium text-ink-foreground shadow-sm">
               <MapIcon className="size-4" />
               Click to place your guess
+              <kbd className="ml-1 rounded border border-ink-foreground/30 px-1.5 font-mono text-xs">M</kbd>
             </span>
           </button>
         )}
@@ -202,6 +232,11 @@ export default function GuessMap({ onSubmit, submitting }: GuessMapProps) {
           >
             {submitting ? <Loader2 className="animate-spin" /> : <MapPin />}
             {submitting ? "Submitting..." : marker ? "Submit guess" : "Tap the map to drop a pin"}
+            {marker && !submitting && (
+              <kbd aria-hidden="true" className="ml-1 hidden rounded border border-primary-foreground/40 px-1.5 font-mono text-xs normal-case sm:inline">
+                Enter
+              </kbd>
+            )}
           </Button>
         </div>
       )}

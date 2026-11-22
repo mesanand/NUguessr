@@ -2,7 +2,9 @@
 
 import Link from "next/link"
 
+import { Keyboard } from "lucide-react"
 import { Icons } from "@/components/icons"
+import { openShortcuts } from "@/lib/shortcuts"
 import { NavItem } from "./nav-item"
 import { UserAccountNav } from "./user-account-nav"
 
@@ -32,7 +34,19 @@ export function MainNav() {
             <span className="sr-only sm:hidden">Leaderboards</span>
           </NavItem>
         </div>
-        <UserAccountNav />
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={openShortcuts}
+            aria-label="Keyboard shortcuts"
+            title="Keyboard shortcuts (?)"
+            className="hidden min-h-11 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:inline-flex"
+          >
+            <Keyboard className="size-4" aria-hidden="true" />
+            <kbd className="rounded border border-border px-1.5 font-mono text-xs">?</kbd>
+          </button>
+          <UserAccountNav />
+        </div>
       </nav>
     </header>
   )

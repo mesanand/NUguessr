@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { MainNav } from "@/components/main-nav"
@@ -9,6 +9,9 @@ import { cn } from "@/lib/utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Loader2, Search } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import { useUser } from "../../../hooks/use-user"
+import { isTypingOrModified } from "@/lib/shortcuts"
+import { LeaderboardPodium } from "@/components/leaderboard-podium"
 
 type LeaderboardRow = {
   id: string
@@ -24,6 +27,20 @@ export default function LeaderboardsPage() {
   const [rows, setRows] = useState<LeaderboardRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { user } = useUser()
+  const meId = user?.id ?? null
+  const searchRef = useRef<HTMLInputElement>(null)
+
+  // "/" jumps to the search box.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "/" || isTypingOrModified(e)) return
+      e.preventDefault()
+      searchRef.current?.focus()
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [])
 
   // Pulls real standings from the `users` table. The original version of
   // this page never queried Supabase at all — it rendered a hardcoded
@@ -73,6 +90,14 @@ export default function LeaderboardsPage() {
     })
     .map((player, index) => ({ ...player, rank: index + 1 }))
 
+  // The top three stand on the podium (unless searching); the table lists the rest.
+  const searching = searchQuery.trim() !== ""
+  const podium = !searching ? filteredData.slice(0, 3) : []
+  const tableRows = searching ? filteredData : filteredData.slice(3)
+  const scoreOf = (p: LeaderboardRow) =>
+    sortBy === "total_games" ? p.total_games : sortBy === "avg_score" ? p.avg_score : p.high_score
+  const scoreLabel = sortBy === "total_games" ? "games" : sortBy === "avg_score" ? "average" : "high score"
+
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <MainNav />
@@ -90,12 +115,19 @@ export default function LeaderboardsPage() {
                 aria-hidden="true"
               />
               <Input
+                ref={searchRef}
                 placeholder="Search players"
                 aria-label="Search players"
-                className="h-11 rounded-md bg-card pl-9"
+                className="h-11 rounded-md bg-card pl-9 pr-9"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
+              <kbd
+                aria-hidden="true"
+                className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 rounded border border-border px-1.5 font-mono text-xs text-muted-foreground sm:block"
+              >
+                /
+              </kbd>
             </div>
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="h-11 w-full rounded-md bg-card sm:w-[180px]" aria-label="Sort by">
@@ -110,8 +142,17 @@ export default function LeaderboardsPage() {
           </div>
         </header>
 
+        {!loading && !error && podium.length > 0 && (
+          <LeaderboardPodium
+            players={podium.map((p) => ({ id: p.id, username: p.username, score: scoreOf(p) }))}
+            meId={meId}
+            scoreLabel={scoreLabel}
+          />
+        )}
+
         {/* Departures board */}
-        <section aria-label="Top players" className="overflow-hidden rounded-lg bg-ink text-ink-foreground">
+        {!(podium.length > 0 && tableRows.length === 0 && !loading && !error) && (
+        <section aria-label={podium.length > 0 ? "More players" : "Top players"} className="overflow-hidden rounded-lg bg-ink text-ink-foreground">
           {loading ? (
             <p className="flex items-center justify-center gap-2 py-12 font-mono text-sm text-ink-foreground/70">
               <Loader2 className="size-4 animate-spin" aria-hidden="true" />
@@ -121,8 +162,8 @@ export default function LeaderboardsPage() {
             <p role="alert" className="py-12 text-center font-mono text-sm text-ink-foreground/80">
               {error}
             </p>
-          ) : filteredData.length === 0 ? (
-            <EmptyBoard searching={searchQuery.trim() !== ""} />
+          ) : tableRows.length === 0 ? (
+            <EmptyBoard searching={searching} />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[520px] font-mono text-sm">
@@ -136,12 +177,17 @@ export default function LeaderboardsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredData.map((player) => {
+                  {tableRows.map((player) => {
                     const top = player.rank <= 3
+                    const me = player.id === meId
                     return (
                       <tr
                         key={player.id}
-                        className="border-b border-ink-foreground/10 last:border-0 hover:bg-ink-foreground/5"
+                        aria-current={me ? "true" : undefined}
+                        className={cn(
+                          "border-b border-ink-foreground/10 last:border-0 hover:bg-ink-foreground/5",
+                          me && "bg-primary/25 hover:bg-primary/30"
+                        )}
                       >
                         <td className="px-4 py-3 tabular-nums">
                           <span
@@ -155,6 +201,11 @@ export default function LeaderboardsPage() {
                         </td>
                         <td className="max-w-[220px] truncate px-4 py-3 font-sans text-base font-medium">
                           {player.username}
+                          {me && (
+                            <span className="ml-2 rounded-sm bg-primary px-1.5 py-0.5 align-middle font-mono text-xs font-semibold">
+                              You
+                            </span>
+                          )}
                         </td>
                         <td
                           className={cn(
@@ -178,6 +229,7 @@ export default function LeaderboardsPage() {
             </div>
           )}
         </section>
+        )}
       </main>
     </div>
   )

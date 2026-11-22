@@ -121,12 +121,20 @@ export default function HomePage() {
       <footer className="border-t border-border bg-card">
         <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-2 px-4 py-4 text-sm text-muted-foreground">
           <span>Photos are used under their original licenses.</span>
+          <div className="flex items-center gap-1">
+          <Link
+            href="/shortcuts"
+            className="inline-flex min-h-11 items-center rounded-md px-2 font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            Keyboard shortcuts
+          </Link>
           <Link
             href="/credits"
             className="inline-flex min-h-11 items-center rounded-md px-2 font-medium text-foreground underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             Photo credits
           </Link>
+          </div>
         </div>
       </footer>
     </div>

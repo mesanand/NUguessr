@@ -63,6 +63,26 @@ export default {
         },
         rail: "hsl(var(--rail))",
       },
+      keyframes: {
+        // Leaderboard podium: marquee bulbs twinkle, spotlights sweep.
+        bulb: {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.25" },
+        },
+        sweep: {
+          "0%, 100%": { transform: "rotate(-18deg)" },
+          "50%": { transform: "rotate(14deg)" },
+        },
+        "sweep-reverse": {
+          "0%, 100%": { transform: "rotate(18deg)" },
+          "50%": { transform: "rotate(-14deg)" },
+        },
+      },
+      animation: {
+        bulb: "bulb 1.5s ease-in-out infinite",
+        sweep: "sweep 7s ease-in-out infinite",
+        "sweep-reverse": "sweep-reverse 7s ease-in-out infinite",
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
