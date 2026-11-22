@@ -18,7 +18,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['"Titillium Web"', "var(--font-geist-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
+        sans: ["var(--font-geist-sans)", "ui-sans-serif", "system-ui", "sans-serif"],
+        // Condensed, all-caps-friendly face for headings: station-sign lettering.
+        display: ["var(--font-display)", "var(--font-geist-sans)", "ui-sans-serif", "sans-serif"],
         mono: ["var(--font-geist-mono)", "ui-monospace", "monospace"],
       },
       colors: {
@@ -55,10 +57,11 @@ export default {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
-        mint: {
-          9: "#86ead4",
-          12: "#16433c",
+        ink: {
+          DEFAULT: "hsl(var(--ink))",
+          foreground: "hsl(var(--ink-foreground))",
         },
+        rail: "hsl(var(--rail))",
       },
       borderRadius: {
         lg: "var(--radius)",
