@@ -132,11 +132,15 @@ test("play a full game without answer leaks", async ({ page }, testInfo) => {
     await expect(page.getByText(/points/i).first()).toBeVisible()
     const credit = page.getByText(/^Photo:/)
     await expect(credit).toBeVisible()
-    await expect(credit.getByRole("link", { name: /^via / })).toHaveAttribute("href", /^https:\/\//)
-    await expect(credit.getByRole("link", { name: /^(CC|Public domain)/i })).toHaveAttribute(
-      "href",
-      /^https:\/\/creativecommons\.org\/(licenses|publicdomain)\//
-    )
+    // Licensed photos link their source and license deed; contributors' own
+    // photos are credited by name only.
+    if (/\bvia\b/.test(await credit.innerText())) {
+      await expect(credit.getByRole("link", { name: /^via / })).toHaveAttribute("href", /^https:\/\//)
+      await expect(credit.getByRole("link", { name: /^(CC|Public domain)/i })).toHaveAttribute(
+        "href",
+        /^https:\/\/creativecommons\.org\/(licenses|publicdomain)\//
+      )
+    }
     await expect(page.getByText(/â€|Â·/)).toHaveCount(0) // no mojibake
 
     if (round < 5) {

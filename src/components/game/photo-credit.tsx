@@ -12,6 +12,11 @@ const LINK_CLASS = "font-medium text-foreground underline underline-offset-2 hov
 export function LicenseText({ license, className }: { license: string | null | undefined; className?: string }) {
   const parts = parseLicense(license)
   if (!parts) return null
+  // Contributors' own photos ("owned") have no public license to show; keep
+  // only the change note, e.g. "(text blurred)".
+  if (/^owned$/i.test(parts.text)) {
+    return parts.note ? <span className={className}>{parts.note}</span> : null
+  }
   return (
     <span className={className}>
       {parts.href ? (
@@ -31,14 +36,30 @@ export function LicenseText({ license, className }: { license: string | null | u
  * deed and the source part links to the original. Everything is rendered as
  * plain text (author strings come from third-party metadata).
  */
+function parseLicenseNote(license: string): string | null {
+  return parseLicense(license)?.note ?? null
+}
+
 export function PhotoCredit({ credit, className }: { credit: PhotoCreditData | null | undefined; className?: string }) {
   const author = cleanText(credit?.author)
-  const hasLicense = cleanText(credit?.license) !== null
-  const label = sourceLabel(credit?.source)
-  const href = safeHttpUrl(credit?.sourceUrl)
+  const own = credit?.source === "own"
+  const license = cleanText(credit?.license)
+  const hasLicense = license !== null && !(own && /^owned$/i.test(license))
+  // Own photos are credited by name only (no "via" source line).
+  const label = own ? null : sourceLabel(credit?.source)
+  const href = own ? null : safeHttpUrl(credit?.sourceUrl)
 
   const parts: React.ReactNode[] = []
-  if (author) parts.push(<span key="author">{author}</span>)
+  if (author) {
+    // Own photos: the change note sits right after the name, no separator.
+    const note = own && license ? parseLicenseNote(license) : null
+    parts.push(
+      <span key="author">
+        {author}
+        {note && ` ${note}`}
+      </span>
+    )
+  }
   if (hasLicense) parts.push(<LicenseText key="license" license={credit?.license} />)
   if (label || href) {
     const text = label ? `via ${label}` : "Source"

@@ -76,7 +76,7 @@ export default async function CreditsPage() {
                 {rows.map((row, i) => {
                   const author = cleanText(row.author) ?? "Unknown author"
                   const hasLicense = cleanText(row.license) !== null
-                  const label = sourceLabel(row.source)
+                  const label = row.source === "own" ? null : sourceLabel(row.source)
                   const home = sourceHomeUrl(row.source)
                   return (
                     <li
