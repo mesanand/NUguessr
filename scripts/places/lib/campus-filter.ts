@@ -22,10 +22,29 @@ export function campusRings(): LatLng[][] {
   if (!rings) {
     const file = path.join(__dirname, '..', 'campus-polygon.json')
     const json = JSON.parse(readFileSync(file, 'utf8')) as PolygonFile
-    rings = json.rings.map((r) => r.ring)
+    rings = [...json.rings.map((r) => r.ring), ...EXTRA_AREAS.map((a) => a.ring)]
   }
   return rings
 }
+
+/**
+ * Places next to campus that students treat as part of it, added by hand on
+ * top of the OSM outline (which a refetch would overwrite, so they live here).
+ * Each must also sit inside CAMPUS_BOUNDS to be playable.
+ */
+const EXTRA_AREAS: { name: string; ring: LatLng[] }[] = [
+  {
+    // Christian Science Plaza: the fountain, reflecting pool and tree rows
+    // between Huntington Ave and Massachusetts Ave.
+    name: "Christian Science Plaza",
+    ring: [
+      [42.3428, -71.0866],
+      [42.3428, -71.0822],
+      [42.3456, -71.0822],
+      [42.3456, -71.0866],
+    ],
+  },
+]
 
 export function inCampusBounds(lat: number, lng: number): boolean {
   return isOnCampus(lat, lng, CAMPUS_BOUNDS)

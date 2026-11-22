@@ -227,8 +227,8 @@ test("guess map is locked to campus", async ({ page }, testInfo) => {
   for (const t of tiles) {
     expect(t.z).toBeGreaterThanOrEqual(15)
     expect(t.lat).toBeGreaterThan(42.334 - 0.004 - 0.012)
-    expect(t.lat).toBeLessThan(42.3445 + 0.004 + 0.012)
+    expect(t.lat).toBeLessThan(42.3456 + 0.004 + 0.012)
     expect(t.lng).toBeGreaterThan(-71.096 - 0.004 - 0.012)
-    expect(t.lng).toBeLessThan(-71.083 + 0.004 + 0.012)
+    expect(t.lng).toBeLessThan(-71.082 + 0.004 + 0.012)
   }
 })

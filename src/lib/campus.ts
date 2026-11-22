@@ -3,7 +3,7 @@
 //
 // Bounds cover the main campus from International Village / Ruggles /
 // Columbus Ave (south-east) to Huntington Ave / the Museum of Fine Arts and
-// the Fenway edge (north-west). Verified against OpenStreetMap's campus
+// the Fenway edge (north-west), plus Christian Science Plaza (north-east). Verified against OpenStreetMap's campus
 // outline — see DECISIONS.md.
 
 export type LatLngTuple = [number, number]
@@ -18,8 +18,10 @@ export interface Bounds {
 export const CAMPUS_BOUNDS: Bounds = {
   south: 42.334,
   west: -71.096,
-  north: 42.3445,
-  east: -71.083,
+  // Widened (Nov 2026) from 42.3445 / -71.083 to take in Christian Science
+  // Plaza; public/map/campus-basemap.json already draws this area.
+  north: 42.3456,
+  east: -71.082,
 }
 
 export const CAMPUS_CENTER: LatLngTuple = [
