@@ -16,7 +16,8 @@
     "places:push": "tsx --env-file-if-exists=.env.local scripts/places/push.ts",
     "places:publish": "tsx --env-file-if-exists=.env.local scripts/places/publish.ts",
     "places:export": "tsx --env-file-if-exists=.env.local scripts/places/export.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "readme:shots": "tsx scripts/readme-screenshots.ts"
   },
   "dependencies": {
     "@fontsource/open-sans": "^5.1.1",
