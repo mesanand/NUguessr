@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button"
 import Timer from "@/components/timer"
 import MapResult from "@/components/map-result"
 import GuessMap from "./guess-map"
+import { RouteLine } from "./route-line"
 import { friendlyError } from "./messages"
 import { useStartGame } from "./use-start-game"
 
@@ -224,10 +225,10 @@ export default function PlayGame({ gameId }: { gameId: string }) {
     return (
       <div className="flex h-[100dvh] flex-col bg-background text-foreground">
         <header className="flex h-16 shrink-0 items-center border-b border-border bg-card px-4 sm:px-6">
-          <span className="text-sm text-muted-foreground">Round</span>
+          <span className="sign-label">Loading route</span>
         </header>
-        <main className="flex flex-1 items-center justify-center bg-muted">
-          <p className="inline-flex items-center gap-2 text-base text-muted-foreground">
+        <main className="flex flex-1 items-center justify-center bg-ink">
+          <p className="inline-flex items-center gap-2 text-base text-ink-foreground/80">
             <Loader2 className="size-4 animate-spin" aria-hidden="true" />
             Loading game...
           </p>
@@ -263,12 +264,18 @@ export default function PlayGame({ gameId }: { gameId: string }) {
 
   return (
     <div className="flex h-[100dvh] flex-col bg-background text-foreground">
-      {/* Header bar: round indicator + timer on one row */}
-      <header className="flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border bg-card px-4 sm:px-6">
-        <div className="flex items-baseline gap-2">
-          <span className="text-sm text-muted-foreground">Round</span>
-          <span className="text-xl font-semibold tabular-nums">
-            {roundIndex + 1} / {totalRounds}
+      {/* Header bar: the round tracker (stops on a line) + timer */}
+      <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border bg-card px-4 sm:px-6">
+        <div className="flex min-w-0 items-center gap-4">
+          <Link
+            href="/"
+            className="hidden font-display text-lg font-bold uppercase tracking-wide text-foreground sm:inline"
+          >
+            NU<span className="text-primary">Guessr</span>
+          </Link>
+          <RouteLine total={totalRounds} current={roundIndex} done={roundIndex} />
+          <span className="hidden font-mono text-sm tabular-nums text-muted-foreground md:inline">
+            {sumPoints(game).toLocaleString()} pts
           </span>
           <span className="sr-only">Score so far: {sumPoints(game)} points</span>
         </div>
@@ -282,7 +289,7 @@ export default function PlayGame({ gameId }: { gameId: string }) {
 
       {/* Photo fills the rest of the viewport (bottom padding on mobile
           leaves room for the collapsed "Open map" bar). */}
-      <main className="relative min-h-0 flex-1 bg-muted pb-20 sm:pb-0">
+      <main className="relative min-h-0 flex-1 bg-ink pb-20 sm:pb-0">
         <div className="relative h-full w-full">
           {round?.imageUrl ? (
             <Image
@@ -295,7 +302,7 @@ export default function PlayGame({ gameId }: { gameId: string }) {
               className="object-contain"
             />
           ) : (
-            <p className="flex h-full items-center justify-center gap-2 text-base text-muted-foreground">
+            <p className="flex h-full items-center justify-center gap-2 text-base text-ink-foreground/80">
               <Loader2 className="size-4 animate-spin" aria-hidden="true" />
               Loading photo...
             </p>
@@ -305,7 +312,7 @@ export default function PlayGame({ gameId }: { gameId: string }) {
         {submitError && (
           <div
             role="alert"
-            className="absolute inset-x-4 top-4 z-[1100] mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-border bg-card p-3 text-sm shadow-md"
+            className="absolute inset-x-4 top-4 z-[1100] mx-auto flex max-w-md items-center gap-3 rounded-lg border border-border bg-card p-3 text-sm shadow-md"
           >
             <AlertCircle className="size-5 shrink-0 text-destructive" aria-hidden="true" />
             <span className="flex-1">{submitError}</span>
@@ -332,7 +339,7 @@ function GameError({ message }: { message: string }) {
   const { start, pending, error } = useStartGame()
   return (
     <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 bg-background px-6 text-center text-foreground">
-      <h1 className="text-2xl font-bold">We couldn&apos;t load this game</h1>
+      <h1 className="text-3xl uppercase">We couldn&apos;t load this game</h1>
       <p className="max-w-md text-base text-muted-foreground">{error ?? message}</p>
       <div className="flex flex-col gap-3 sm:flex-row">
         <Button

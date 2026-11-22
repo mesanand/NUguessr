@@ -8,7 +8,7 @@ import { UserAccountNav } from "./user-account-nav"
 
 export function MainNav() {
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-border bg-card">
+    <header className="sticky top-0 z-40 w-full border-b-[3px] border-ink bg-card">
       <nav
         aria-label="Main"
         className="mx-auto flex h-16 w-full max-w-5xl items-center justify-between gap-2 px-4"
@@ -16,12 +16,15 @@ export function MainNav() {
         <div className="flex min-w-0 items-center gap-1 sm:gap-2">
           <Link
             href="/"
-            className="mr-1 inline-flex min-h-11 items-center gap-2 rounded-lg pr-2 text-lg font-bold tracking-tight text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="mr-1 inline-flex min-h-11 items-center gap-2 rounded-md pr-2 font-display text-2xl font-bold uppercase tracking-wide text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <span className="flex size-8 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
-              <Icons.mapPin className="size-4" aria-hidden="true" />
+            <span
+              aria-hidden="true"
+              className="block size-4 rounded-full border-[4px] border-primary bg-card"
+            />
+            <span>
+              NU<span className="text-primary">Guessr</span>
             </span>
-            NUGuessr
           </Link>
           <NavItem href="/leaderboards">
             <Icons.trophy className="size-4" aria-hidden="true" />

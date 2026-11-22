@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test"
 test("reload on a result keeps the result and doesn't start the next round", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === "mobile", "checked once on desktop")
   await page.goto("/")
-  await page.getByRole("button", { name: /test your skills/i }).click()
+  await page.getByRole("button", { name: /play now/i }).click()
   await page.waitForURL(/\/play\/[0-9a-f-]{36}$/, { timeout: 60_000 })
 
   await page.getByRole("button", { name: "Expand map to place your guess" }).click()

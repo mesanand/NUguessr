@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser } from "../../../hooks/use-user";
@@ -10,7 +9,7 @@ import { SignOutButton } from "@/components/signout-button";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useStartGame } from "@/components/game/use-start-game";
-import Image from "next/image";
+import { MainNav } from "@/components/main-nav";
 import {
   MapPin,
   Edit2,
@@ -117,17 +116,17 @@ export default function ProfilePage() {
 
   const stats = [
     {
-      label: "High Score",
+      label: "High score",
       icon: Star,
       value: highScore !== null ? highScore.toLocaleString() : null,
     },
     {
-      label: "Average Score",
+      label: "Average score",
       icon: BarChart2,
       value: avgScore !== null ? avgScore.toLocaleString() : null,
     },
     {
-      label: "Games Played",
+      label: "Games played",
       icon: GamepadIcon,
       value: gamesPlayed !== null ? gamesPlayed.toLocaleString() : null,
     },
@@ -137,96 +136,88 @@ export default function ProfilePage() {
   const initial = (username || "?").trim().charAt(0).toUpperCase()
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <main className="container mx-auto max-w-4xl px-4 py-8 sm:py-12">
-        <div className="mb-8 flex justify-center">
-          <Image
-            src="/logo.png"
-            alt="NUGuessr Logo"
-            width={240}
-            height={400}
-            className="h-auto w-48 sm:w-60"
-            priority
-          />
-        </div>
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <MainNav />
 
-        {/* Profile header */}
-        <Card className="rounded-2xl border-border bg-card shadow-sm">
-          <CardContent className="flex flex-col items-center gap-4 p-6 sm:flex-row sm:justify-between">
-            <div className="flex flex-col items-center gap-4 sm:flex-row">
-              <Avatar className="h-20 w-20">
-                {avatarUrl && <AvatarImage src={avatarUrl} alt="Profile picture" />}
-                <AvatarFallback className="bg-secondary text-2xl font-bold text-secondary-foreground">
-                  {initial}
-                </AvatarFallback>
-              </Avatar>
+      {/* Rider card */}
+      <header className="bg-ink text-ink-foreground">
+        <div className="mx-auto flex w-full max-w-4xl flex-col gap-5 px-4 py-8 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <Avatar className="h-20 w-20 ring-4 ring-primary">
+              {avatarUrl && <AvatarImage src={avatarUrl} alt="Profile picture" />}
+              <AvatarFallback className="bg-primary font-display text-3xl font-bold text-primary-foreground">
+                {initial}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <p className="sign-label text-ink-foreground/60">Rider</p>
               {isEditingUsername ? (
-                <div className="flex items-center gap-2">
+                <div className="mt-1 flex items-center gap-2">
                   <Input
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     aria-label="Username"
-                    className="h-11 max-w-[220px] rounded-lg"
+                    maxLength={32}
+                    className="h-11 max-w-[220px] rounded-md bg-card text-foreground"
                   />
                   <Button
                     size="icon"
-                    variant="ghost"
                     onClick={saveUsername}
                     disabled={isSavingUsername}
                     aria-label="Save username"
-                    className="min-h-11 min-w-11 rounded-lg text-primary hover:bg-secondary hover:text-secondary-foreground"
+                    className="min-h-11 min-w-11 rounded-md"
                   >
                     <Save className="h-5 w-5" />
                   </Button>
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold">{username}</h1>
+                <div className="flex items-center gap-1">
+                  <h1 className="truncate text-4xl uppercase">{username}</h1>
                   <Button
                     size="icon"
                     variant="ghost"
                     onClick={() => setIsEditingUsername(true)}
                     aria-label="Edit username"
-                    className="min-h-11 min-w-11 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                    className="min-h-11 min-w-11 rounded-md text-ink-foreground/70 hover:bg-ink-foreground/10 hover:text-ink-foreground"
                   >
                     <Edit2 className="h-5 w-5" />
                   </Button>
                 </div>
               )}
             </div>
-            <SignOutButton />
-          </CardContent>
-        </Card>
+          </div>
+          <SignOutButton />
+        </div>
+      </header>
 
+      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">
         {/* Stats */}
-        <section aria-labelledby="stats-heading" className="mt-8">
-          <h2 id="stats-heading" className="mb-4 text-xl font-semibold">
+        <section aria-labelledby="stats-heading">
+          <h2 id="stats-heading" className="text-2xl uppercase">
             Your stats
           </h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
             {stats.map(({ label, icon: Icon, value }) => (
-              <Card key={label} className="rounded-2xl border-border bg-card shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 p-6 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
-                  <Icon className="h-5 w-5 text-primary" aria-hidden="true" />
-                </CardHeader>
-                <CardContent className="p-6 pt-0">
-                  {value !== null ? (
-                    <p className="text-4xl font-bold tracking-tight">{value}</p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Loading…</p>
-                  )}
-                </CardContent>
-              </Card>
+              <div key={label} className="rounded-lg border border-border bg-card p-5">
+                <div className="flex items-center justify-between">
+                  <p className="sign-label">{label}</p>
+                  <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
+                </div>
+                {value !== null ? (
+                  <p className="mt-2 font-mono text-4xl font-semibold tabular-nums">{value}</p>
+                ) : (
+                  <p className="mt-2 text-sm text-muted-foreground">Loading…</p>
+                )}
+              </div>
             ))}
           </div>
         </section>
 
         {/* Actions */}
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Button
             size="lg"
-            className="h-12 w-full rounded-lg text-base font-semibold"
+            className="h-12 w-full rounded-md text-base font-semibold uppercase tracking-wide"
             onClick={startGame}
             disabled={startingGame}
             aria-busy={startingGame}
@@ -241,7 +232,7 @@ export default function ProfilePage() {
           <Button
             size="lg"
             variant="outline"
-            className="h-12 w-full rounded-lg text-base font-semibold"
+            className="h-12 w-full rounded-md text-base font-semibold"
             onClick={navigateLeaderboard}
           >
             <Trophy className="mr-2 h-5 w-5" /> Leaderboards

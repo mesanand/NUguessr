@@ -1,8 +1,5 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "@fontsource/titillium-web/400.css";
-import "@fontsource/titillium-web/600.css";
-import "@fontsource/titillium-web/700.css";
+import type { Metadata, Viewport } from "next";
+import { Barlow_Condensed, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -10,10 +7,20 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
+const display = Barlow_Condensed({
+  variable: "--font-display",
+  subsets: ["latin"],
+  weight: ["600", "700"],
+});
+
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
+
+export const viewport: Viewport = {
+  themeColor: "#c51230",
+};
 
 export const metadata: Metadata = {
   title: "NUGuessr",
@@ -28,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} bg-background font-sans text-foreground antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${display.variable} bg-background font-sans text-foreground antialiased`}
       >
         {children}
       </body>

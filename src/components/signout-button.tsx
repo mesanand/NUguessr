@@ -19,7 +19,7 @@ export function SignOutButton() {
   return (
     <Button
       variant="outline"
-      className="h-11 w-full rounded-lg"
+      className="h-11 w-full rounded-md sm:w-auto"
       onClick={handleLogout}
     >
       <Icons.logOut />

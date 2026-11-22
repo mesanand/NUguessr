@@ -19,8 +19,8 @@ export function NavItem({ href, children }: NavItemProps) {
       href={href}
       aria-current={isActive ? "page" : undefined}
       className={cn(
-        "inline-flex min-h-11 items-center gap-2 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-        isActive && "bg-secondary text-secondary-foreground hover:bg-secondary hover:text-secondary-foreground"
+        "inline-flex min-h-11 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        isActive && "bg-ink text-ink-foreground hover:bg-ink hover:text-ink-foreground"
       )}
     >
       {children}

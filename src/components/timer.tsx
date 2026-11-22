@@ -59,7 +59,7 @@ export default function Timer({ deadline, seconds = 0, onComplete, stopped = fal
   const remainingSeconds = timeLeft % 60
   const formattedTime = `${minutes.toString().padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`
 
-  // Last 10 seconds: switch to the primary (tomato) treatment as a warning.
+  // Last 10 seconds: the timer turns signal red as a warning.
   const isLow = timeLeft <= 10
 
   return (
@@ -67,10 +67,10 @@ export default function Timer({ deadline, seconds = 0, onComplete, stopped = fal
       role="timer"
       aria-label={`${formattedTime} remaining`}
       className={cn(
-        "inline-flex h-11 items-center gap-2 rounded-lg border px-3 font-mono text-lg font-semibold tabular-nums transition-colors",
+        "inline-flex h-11 items-center gap-2 rounded-md border px-3 font-mono text-lg font-semibold tabular-nums transition-colors",
         isLow
-          ? "border-primary bg-secondary text-secondary-foreground"
-          : "border-border bg-background text-foreground",
+          ? "border-primary bg-primary text-primary-foreground motion-safe:animate-pulse"
+          : "border-border bg-card text-foreground",
         className,
       )}
     >

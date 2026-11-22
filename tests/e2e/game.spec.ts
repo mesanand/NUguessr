@@ -59,7 +59,7 @@ test("play a full game without answer leaks", async ({ page }, testInfo) => {
   await page.goto("/")
   await expect(page).toHaveTitle("NUGuessr")
   await shot(page, project, "01-home")
-  await page.getByRole("button", { name: /test your skills/i }).click()
+  await page.getByRole("button", { name: /play now/i }).click()
   await page.waitForURL(/\/play\/[0-9a-f-]{36}$/, { timeout: 60_000 })
 
   for (let round = 1; round <= 5; round++) {
@@ -182,7 +182,7 @@ test("play a full game without answer leaks", async ({ page }, testInfo) => {
 test("guess map is locked to campus", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === "mobile", "checked once on desktop")
   await page.goto("/")
-  await page.getByRole("button", { name: /test your skills/i }).click()
+  await page.getByRole("button", { name: /play now/i }).click()
   await page.waitForURL(/\/play\/[0-9a-f-]{36}$/, { timeout: 60_000 })
   await page.getByRole("button", { name: "Expand map to place your guess" }).click()
   const map = page.locator(".leaflet-container").first()

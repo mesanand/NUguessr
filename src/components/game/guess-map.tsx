@@ -88,9 +88,9 @@ export default function GuessMap({ onSubmit, submitting }: GuessMapProps) {
     <div
       ref={containerRef}
       className={cn(
-        "fixed z-[1000] flex flex-col overflow-hidden border-border bg-card shadow-md transition-all duration-300",
-        "inset-x-0 bottom-0 rounded-t-2xl border-t",
-        "sm:inset-x-auto sm:bottom-6 sm:right-6 sm:rounded-2xl sm:border",
+        "fixed z-[1000] flex flex-col overflow-hidden border-border bg-card shadow-xl transition-all duration-300",
+        "inset-x-0 bottom-0 rounded-t-xl border-t",
+        "sm:inset-x-auto sm:bottom-6 sm:right-6 sm:rounded-xl sm:border",
         isExpanded ? "h-[80dvh] sm:h-[60vh] sm:w-[50vw]" : "h-auto sm:h-[200px] sm:w-[300px]"
       )}
     >
@@ -101,7 +101,7 @@ export default function GuessMap({ onSubmit, submitting }: GuessMapProps) {
             <div className="h-1.5 w-12 rounded-full bg-border" />
           </div>
           <div className="flex items-center justify-between gap-2 py-1 pl-4 pr-1">
-            <h3 className="text-base font-semibold">Drop a pin on your guess</h3>
+            <h3 className="font-display text-lg font-bold uppercase tracking-wide">Drop a pin on your guess</h3>
             <Button
               type="button"
               variant="ghost"
@@ -153,7 +153,7 @@ export default function GuessMap({ onSubmit, submitting }: GuessMapProps) {
             type="button"
             onClick={() => setBaseLayer((l) => (l === "map" ? "satellite" : "map"))}
             aria-label={baseLayer === "map" ? "Switch to satellite view" : "Switch to map view"}
-            className="absolute right-3 top-3 z-[1000] inline-flex h-11 min-w-11 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm font-medium text-card-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="absolute right-3 top-3 z-[1000] inline-flex h-11 min-w-11 items-center gap-2 rounded-md border border-border bg-card px-3 text-sm font-medium text-card-foreground shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Layers className="size-4" aria-hidden="true" />
             {baseLayer === "map" ? "Satellite" : "Map"}
@@ -167,9 +167,9 @@ export default function GuessMap({ onSubmit, submitting }: GuessMapProps) {
             type="button"
             aria-label="Expand map to place your guess"
             onClick={() => setIsExpanded(true)}
-            className="absolute inset-0 z-[500] flex items-end justify-center bg-foreground/5 p-3 transition-colors hover:bg-foreground/10 active:bg-foreground/15"
+            className="absolute inset-0 z-[500] flex items-end justify-center bg-ink/10 p-3 transition-colors hover:bg-ink/20 active:bg-ink/25"
           >
-            <span className="inline-flex h-11 items-center gap-2 rounded-lg bg-card px-4 text-sm font-medium text-card-foreground shadow-sm">
+            <span className="inline-flex h-11 items-center gap-2 rounded-md bg-ink px-4 text-sm font-medium text-ink-foreground shadow-sm">
               <MapIcon className="size-4" />
               Click to place your guess
             </span>
@@ -183,7 +183,7 @@ export default function GuessMap({ onSubmit, submitting }: GuessMapProps) {
           <Button
             type="button"
             onClick={() => setIsExpanded(true)}
-            className="h-12 w-full rounded-lg text-base font-semibold"
+            className="h-12 w-full rounded-md text-base font-semibold"
           >
             <MapIcon />
             Open map
@@ -198,7 +198,7 @@ export default function GuessMap({ onSubmit, submitting }: GuessMapProps) {
             onClick={handleSubmit}
             disabled={!canGuess}
             aria-busy={submitting}
-            className="h-12 w-full rounded-lg text-base font-semibold"
+            className="h-12 w-full rounded-md text-base font-semibold uppercase tracking-wide"
           >
             {submitting ? <Loader2 className="animate-spin" /> : <MapPin />}
             {submitting ? "Submitting..." : marker ? "Submit guess" : "Tap the map to drop a pin"}

@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { MainNav } from "@/components/main-nav"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/server"
 import { cleanText, sourceHomeUrl, sourceLabel } from "@/components/game/credit-utils"
@@ -35,6 +36,7 @@ export default async function CreditsPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <MainNav />
       <main className="container mx-auto max-w-3xl px-4 py-8 sm:py-12">
         <header className="mb-8 space-y-2">
           <Link
@@ -43,7 +45,7 @@ export default async function CreditsPage() {
           >
             &larr; Back to NUGuessr
           </Link>
-          <h1 className="text-4xl font-bold tracking-tight">Photo credits</h1>
+          <h1 className="text-4xl uppercase sm:text-5xl">Photo credits</h1>
           <p className="text-base text-muted-foreground">
             NUGuessr&apos;s campus photos come from Wikimedia Commons, Mapillary and our own
             contributors, and are used under their original licenses. Thank you to everyone who
@@ -54,7 +56,7 @@ export default async function CreditsPage() {
           </p>
         </header>
 
-        <Card className="rounded-2xl border-border bg-card shadow-sm">
+        <Card className="rounded-lg border-border bg-card">
           <CardHeader className="p-4 sm:p-6">
             <CardTitle className="text-2xl font-bold">
               {rows.length > 0 ? `${rows.length} ${rows.length === 1 ? "photo" : "photos"}` : "Photos"}

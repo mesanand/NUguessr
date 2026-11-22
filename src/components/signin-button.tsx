@@ -1,6 +1,4 @@
 import { Button } from "@/components/ui/button"
-import "@fontsource/open-sans"
-import '@fontsource/titillium-web'
 import { useUser } from "../../hooks/use-user"
 import { createClient } from "@/lib/supabase/client"
 import { toast } from "@/hooks/use-toast"
@@ -18,7 +16,7 @@ export function SignInButton() {
     <Suspense
       fallback={
         <Button
-          className="h-11 rounded-lg px-5 text-base font-semibold"
+          className="h-11 rounded-md px-5 text-base font-semibold"
           type="button"
           disabled
         >
@@ -74,7 +72,7 @@ function SignInButtonInner() {
 
     return (
       <Button
-        className="h-11 rounded-lg px-5 text-base font-semibold"
+        className="h-11 rounded-md px-5 text-base font-semibold"
         type="button"
         onClick={handleButtonClick}
         disabled={isGoogleLoading}

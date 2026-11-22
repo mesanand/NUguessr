@@ -1,6 +1,5 @@
 "use client"
 
-import "@fontsource/titillium-web"
 import { SignInButton } from "@/components/signin-button"
 import { MainNav } from "@/components/main-nav"
 import { Icons } from "@/components/icons"
@@ -17,11 +16,11 @@ export default function SignInPage() {
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <MainNav />
       <main className="flex flex-1 items-center justify-center px-4 py-12">
-        <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+        <div className="w-full max-w-sm rounded-lg border border-border bg-card p-8 text-center shadow-sm">
           <span className="mx-auto flex size-12 items-center justify-center rounded-full bg-secondary text-secondary-foreground">
             <Icons.mapPin className="size-6" aria-hidden="true" />
           </span>
-          <h1 className="mt-6 text-2xl font-bold">
+          <h1 className="mt-6 text-3xl uppercase">
             Sign in to track your scores
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">

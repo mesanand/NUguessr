@@ -23,7 +23,7 @@ export default async function AdminPage() {
     <main className="mx-auto flex min-h-[100dvh] max-w-3xl flex-col gap-4 px-4 py-6">
       <h1 className="text-2xl font-semibold">Admin</h1>
 
-      <Link href="/admin/curate" className="group block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <Link href="/admin/curate" className="group block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
         <Card className="transition-colors group-hover:bg-muted">
           <CardContent className="flex min-h-11 items-center gap-4 p-4">
             <Images className="size-6 shrink-0 text-primary" aria-hidden="true" />

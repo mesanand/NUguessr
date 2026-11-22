@@ -1,5 +1,3 @@
-import "@fontsource/open-sans";
-import "@fontsource/titillium-web";
 import { useUser } from "../../hooks/use-user";
 import { Icons } from "@/components/icons";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
