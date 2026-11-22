@@ -1,8 +1,8 @@
 {
   "note": "Repo-only backup of curated places. Deliberately has NO image paths/file names, so it cannot map served images to answers. Never serve or import this from the app.",
-  "generated_at": "2026-11-22T02:39:54.528Z",
+  "generated_at": "2026-11-22T02:52:12.837Z",
   "origin": "places table",
-  "count": 49,
+  "count": 51,
   "places": [
     {
       "source": "own",
@@ -93,6 +93,51 @@
       "difficulty": 2,
       "crop": null,
       "redact": null
+    },
+    {
+      "source": "own",
+      "source_id": "72beef2d0567b52b23387b373e0a45d2148d5973",
+      "source_url": null,
+      "author": "Mehr Anand",
+      "license": "owned",
+      "attribution": "Photo: Mehr Anand",
+      "name": "Christian Science Plaza in the snow",
+      "notes": null,
+      "lat": 42.3433611,
+      "lng": -71.08455,
+      "heading": 54.1,
+      "difficulty": 3,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "own",
+      "source_id": "7445d5105c7352d6aded80556297396b256e7772",
+      "source_url": null,
+      "author": "Mehr Anand",
+      "license": "owned (text blurred)",
+      "attribution": "Photo: Mehr Anand",
+      "name": "Christian Science Plaza fountain",
+      "notes": null,
+      "lat": 42.345,
+      "lng": -71.0827417,
+      "heading": 126.8,
+      "difficulty": 2,
+      "crop": null,
+      "redact": [
+        {
+          "left": 0,
+          "top": 0.2,
+          "width": 0.105,
+          "height": 0.045
+        },
+        {
+          "left": 0.1,
+          "top": 0.26,
+          "width": 0.03,
+          "height": 0.08
+        }
+      ]
     },
     {
       "source": "own",
