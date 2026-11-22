@@ -64,8 +64,10 @@ export async function updateSession(request: NextRequest) {
     return withCookies(NextResponse.redirect(url), supabaseResponse)
   }
 
-  // Redirect authenticated users attempting to access the sign-in page to the home page
-  if (user && pathname.startsWith("/signin")) {
+  // Redirect signed-in users away from the sign-in page. Anonymous players
+  // (every visitor who has played) may still open it: /signin is how an
+  // admin signs in with Google.
+  if (user && !user.is_anonymous && pathname.startsWith("/signin")) {
     const url = request.nextUrl.clone()
     url.pathname = "/"
     url.search = ""

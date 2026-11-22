@@ -8,6 +8,7 @@ import { useUser } from "../../../hooks/use-user";
 import { SignOutButton } from "@/components/signout-button";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { loadMyName, saveMyName, NAME_MAX } from "@/lib/player";
 import { useStartGame } from "@/components/game/use-start-game";
 import { MainNav } from "@/components/main-nav";
 import {
@@ -23,18 +24,18 @@ import {
 export default function ProfilePage() {
   const [isEditingUsername, setIsEditingUsername] = useState(false);
   const [isSavingUsername, setIsSavingUsername] = useState(false);
-  const { user } = useUser();  // Assuming `useUser` hook fetches authenticated user data
+  const { user, loading: userLoading } = useUser();
   const supabaseClient = createClient();
 
-  const [username, setUsername] = useState(user?.user_metadata?.name || "");
+  const [username, setUsername] = useState("");
+  const [nameError, setNameError] = useState<string | null>(null);
 
-  // Keep the field in sync once the user object actually loads (it starts
-  // out null on first render, so the initial useState value above is often "").
+  // The leaderboard name lives in the users table (players don't sign in,
+  // so there's usually no auth profile name).
   useEffect(() => {
-    if (user?.user_metadata?.name) {
-      setUsername(user.user_metadata.name);
-    }
-  }, [user?.user_metadata?.name]);
+    if (!user?.id) return;
+    loadMyName(user.id).then((name) => setUsername(name ?? ""));
+  }, [user?.id]);
   const [gamesPlayed, setGamesPlayed] = useState<number | null>(null);  // Initialize as null
   const [highScore, setHighScore] = useState<number | null>(null);  // Initialize as null
   const [avgScore, setAvgScore] = useState<number | null>(null);  // Initialize as null
@@ -89,20 +90,15 @@ export default function ProfilePage() {
     }
   }, [user?.id, supabaseClient]);  // Only run when user changes or user.id is available
 
-  // Persist the edited username. The original version only toggled local
-  // state here and never actually wrote anywhere, so edits vanished on refresh.
+  // Persist the edited leaderboard name.
   const saveUsername = async () => {
     if (!user?.id) return
     setIsSavingUsername(true)
-    try {
-      const [{ error: authError }, { error: dbError }] = await Promise.all([
-        supabaseClient.auth.updateUser({ data: { name: username } }),
-        supabaseClient.from("users").update({ username }).eq("id", user.id),
-      ])
-      if (authError) console.error("Error updating auth profile:", authError)
-      if (dbError) console.error("Error updating username in users table:", dbError)
-    } finally {
-      setIsSavingUsername(false)
+    const problem = await saveMyName(user.id, username)
+    setIsSavingUsername(false)
+    setNameError(problem)
+    if (!problem) {
+      setUsername(username.trim())
       setIsEditingUsername(false)
     }
   }
@@ -135,11 +131,41 @@ export default function ProfilePage() {
   const avatarUrl: string | undefined = user?.user_metadata?.avatar_url
   const initial = (username || "?").trim().charAt(0).toUpperCase()
 
+  // Nobody has to sign in: a visitor who hasn't played yet has no stats.
+  if (!userLoading && !user) {
+    return (
+      <div className="flex min-h-screen flex-col bg-background text-foreground">
+        <MainNav />
+        <main className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-4 px-4 py-12 text-center">
+          <h1 className="text-4xl uppercase">No stats yet</h1>
+          <p className="text-base text-muted-foreground">
+            Play a game and your scores will show up here.
+          </p>
+          <Button
+            size="lg"
+            className="h-12 rounded-md px-8 text-base font-semibold uppercase tracking-wide"
+            onClick={startGame}
+            disabled={startingGame}
+            aria-busy={startingGame}
+          >
+            {startingGame && <Loader2 className="animate-spin" />}
+            Play now
+          </Button>
+          {startError && (
+            <p role="alert" className="text-sm text-destructive">
+              {startError}
+            </p>
+          )}
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <MainNav />
 
-      {/* Rider card */}
+      {/* Player card */}
       <header className="bg-ink text-ink-foreground">
         <div className="mx-auto flex w-full max-w-4xl flex-col gap-5 px-4 py-8 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
@@ -150,14 +176,15 @@ export default function ProfilePage() {
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0">
-              <p className="sign-label text-ink-foreground/60">Rider</p>
+              <p className="sign-label text-ink-foreground/60">On the board as</p>
               {isEditingUsername ? (
                 <div className="mt-1 flex items-center gap-2">
                   <Input
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    aria-label="Username"
-                    maxLength={32}
+                    aria-label="Leaderboard name"
+                    maxLength={NAME_MAX}
+                    placeholder="Pick a name"
                     className="h-11 max-w-[220px] rounded-md bg-card text-foreground"
                   />
                   <Button
@@ -172,7 +199,7 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="flex items-center gap-1">
-                  <h1 className="truncate text-4xl uppercase">{username}</h1>
+                  <h1 className="truncate text-4xl uppercase">{username || "No name yet"}</h1>
                   <Button
                     size="icon"
                     variant="ghost"
@@ -184,9 +211,15 @@ export default function ProfilePage() {
                   </Button>
                 </div>
               )}
+              {nameError && (
+                <p role="alert" className="mt-1 text-sm text-secondary">
+                  {nameError}
+                </p>
+              )}
             </div>
           </div>
-          <SignOutButton />
+          {/* Anonymous players would lose their stats by signing out. */}
+          {user && !user.is_anonymous && <SignOutButton />}
         </div>
       </header>
 

@@ -16,7 +16,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { SignInButton } from "./signin-button"
 
 // Client component: the nav is rendered from client pages (e.g. the home
 // page), so it reads the session via the shared useUser() hook instead of
@@ -42,10 +41,21 @@ export function UserAccountNav() {
     )
   }
 
-  if (!user) {
-    // The sign-in page already shows its own primary sign-in button.
-    if (pathname === "/signin") return null
-    return <SignInButton />
+  // Nobody signs in to play: visitors who haven't played yet see nothing
+  // here, and anonymous players get a link to their stats and name.
+  if (!user) return null
+  if (user.is_anonymous) {
+    if (pathname === "/profile") return null
+    return (
+      <Link
+        href="/profile"
+        className="inline-flex min-h-11 items-center gap-2 rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <Icons.user className="size-4" aria-hidden="true" />
+        <span className="hidden sm:inline">Your stats</span>
+        <span className="sr-only sm:hidden">Your stats</span>
+      </Link>
+    )
   }
 
   const name: string | undefined =

@@ -3,12 +3,13 @@
 import { useCallback, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { startGame } from "@/app/play/actions"
+import { ensurePlayer } from "@/lib/player"
 import { friendlyError } from "./messages"
 
 /**
  * Starts a server-recorded game and navigates to /play/<gameId>. Guarded by a
- * ref so a double click can't start two games (for signed-in players a new
- * game closes and counts any unfinished one).
+ * ref so a double click can't start two games (for players with an account,
+ * anonymous included, a new game closes and counts any unfinished one).
  */
 export function useStartGame() {
   const router = useRouter()
@@ -22,6 +23,9 @@ export function useStartGame() {
     setPending(true)
     setError(null)
     try {
+      // Give this browser an anonymous player account first, so the game
+      // is recorded against it and can go on the leaderboard.
+      await ensurePlayer()
       const res = await startGame()
       if (res.ok) {
         router.push(`/play/${res.data.gameId}`)

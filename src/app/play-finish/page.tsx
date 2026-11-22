@@ -8,7 +8,7 @@ import { MainNav } from "@/components/main-nav"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { SignInButton } from "@/components/signin-button"
+import { NameOnBoard } from "@/components/name-on-board"
 import { useUser } from "../../../hooks/use-user"
 import { getGame } from "@/app/play/actions"
 import type { GameState } from "@/lib/game-types"
@@ -35,7 +35,7 @@ function PlayFinish() {
   const searchParams = useSearchParams()
   const gameId = searchParams.get("game") ?? ""
   const [state, setState] = useState<LoadState>({ kind: "loading" })
-  const { user } = useUser()
+  const { user, loading: userLoading } = useUser()
 
   useEffect(() => {
     let cancelled = false
@@ -183,13 +183,9 @@ function PlayFinish() {
 
         <ShareScore total={total} maxScore={maxScore} rounds={game.rounds.map((r) => r.result?.points ?? 0)} />
 
-        {!user?.email && (
-          <p className="rounded-md border border-border bg-card px-4 py-3 text-base text-muted-foreground">
-            Log in to put your score on the leaderboard.
-          </p>
-        )}
+        {!userLoading && <NameOnBoard userId={user?.id ?? null} key={user?.id ?? "guest"} />}
 
-        <PlayAgain label="Play again" withSignIn={!user?.email} />
+        <PlayAgain label="Play again" />
       </main>
     </div>
   )
@@ -264,7 +260,7 @@ function LoadingCard() {
   )
 }
 
-function PlayAgain({ label, withSignIn = false }: { label: string; withSignIn?: boolean }) {
+function PlayAgain({ label }: { label: string }) {
   const { start, pending, error } = useStartGame()
   return (
     <div className="flex w-full flex-col gap-3">
@@ -279,7 +275,6 @@ function PlayAgain({ label, withSignIn = false }: { label: string; withSignIn?: 
           {pending ? <Loader2 className="animate-spin" /> : <RotateCcw />}
           {label}
         </Button>
-        {withSignIn && <SignInButton />}
       </div>
       {error && (
         <p role="alert" className="text-center text-sm text-destructive">

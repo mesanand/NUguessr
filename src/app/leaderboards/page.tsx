@@ -36,6 +36,8 @@ export default function LeaderboardsPage() {
       const { data, error } = await supabase
         .from("leaderboard_public")
         .select("id, username, high_score, total_games, avg_score")
+        // Only players who picked a name are on the board.
+        .not("username", "is", null)
         .order("high_score", { ascending: false })
         .limit(100)
 
@@ -45,7 +47,7 @@ export default function LeaderboardsPage() {
         setRows(
           (data ?? []).map((row) => ({
             id: row.id,
-            username: row.username || "Anonymous Husky",
+            username: (row.username ?? "").trim() || "Anonymous Husky",
             high_score: row.high_score ?? 0,
             total_games: row.total_games ?? 0,
             avg_score: row.avg_score ?? 0,
@@ -190,7 +192,7 @@ function EmptyBoard({ searching }: { searching: boolean }) {
     <div className="flex flex-col items-center gap-4 px-4 py-12 text-center">
       <p className="font-display text-3xl font-bold uppercase tracking-wide">Board&apos;s empty</p>
       <p className="max-w-sm text-base text-ink-foreground/75">
-        Log in and finish a game to put the first name up here.
+        Finish a game and add your name to be the first one up here.
       </p>
       <Button
         type="button"

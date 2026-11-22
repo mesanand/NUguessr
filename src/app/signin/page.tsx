@@ -21,10 +21,11 @@ export default function SignInPage() {
             <Icons.mapPin className="size-6" aria-hidden="true" />
           </span>
           <h1 className="mt-6 text-3xl uppercase">
-            Sign in to track your scores
+            Admin sign-in
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Save your results and see how you stack up on the leaderboards.
+            For curating photos. Players don&apos;t need an account: just play
+            and add your name to the leaderboard.
           </p>
           <div className="mt-8 flex justify-center">
             <SignInButton />
