@@ -1,9 +1,170 @@
 {
   "note": "Repo-only backup of curated places. Deliberately has NO image paths/file names, so it cannot map served images to answers. Never serve or import this from the app.",
-  "generated_at": "2026-11-21T17:04:27.993Z",
+  "generated_at": "2026-11-22T02:39:54.528Z",
   "origin": "places table",
-  "count": 41,
+  "count": 49,
   "places": [
+    {
+      "source": "own",
+      "source_id": "188d4ebe3b65c8f8ceed554c21afceeecade181c",
+      "source_url": null,
+      "author": "Mehr Anand",
+      "license": "owned",
+      "attribution": "Photo: Mehr Anand",
+      "name": "EXP stairs at sunset",
+      "notes": null,
+      "lat": 42.337322,
+      "lng": -71.087311,
+      "heading": 280.5,
+      "difficulty": 2,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "own",
+      "source_id": "284c9145f626d080c9076c3e1d5e56c2aab02add",
+      "source_url": null,
+      "author": "Mehr Anand",
+      "license": "owned (text blurred)",
+      "attribution": "Photo: Mehr Anand",
+      "name": "Egan Research Center ginkgos",
+      "notes": null,
+      "lat": 42.338422,
+      "lng": -71.088347,
+      "heading": 205.2,
+      "difficulty": 2,
+      "crop": null,
+      "redact": [
+        {
+          "left": 0,
+          "top": 0.52,
+          "width": 0.09,
+          "height": 0.04
+        }
+      ]
+    },
+    {
+      "source": "own",
+      "source_id": "652fa0d6e770e77a5eb0aef38b7542d5ab81ea35",
+      "source_url": null,
+      "author": "Mehr Anand",
+      "license": "owned (text blurred)",
+      "attribution": "Photo: Mehr Anand",
+      "name": "Columbus Avenue in the snow",
+      "notes": null,
+      "lat": 42.337475,
+      "lng": -71.085908,
+      "heading": 193.5,
+      "difficulty": 2,
+      "crop": null,
+      "redact": [
+        {
+          "left": 0.375,
+          "top": 0.19,
+          "width": 0.095,
+          "height": 0.15
+        },
+        {
+          "left": 0.855,
+          "top": 0.325,
+          "width": 0.05,
+          "height": 0.095
+        },
+        {
+          "left": 0.95,
+          "top": 0.47,
+          "width": 0.045,
+          "height": 0.12
+        }
+      ]
+    },
+    {
+      "source": "own",
+      "source_id": "6eeeec905393ae2039ca70c10be07e2d22993f7d",
+      "source_url": null,
+      "author": "Mehr Anand",
+      "license": "owned",
+      "attribution": "Photo: Mehr Anand",
+      "name": "Dana Research Center walkway",
+      "notes": null,
+      "lat": 42.338058,
+      "lng": -71.088806,
+      "heading": 227.4,
+      "difficulty": 2,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "own",
+      "source_id": "748c82b94c3c0b46679ba8d267cf420ebb80fed9",
+      "source_url": null,
+      "author": "Mehr Anand",
+      "license": "owned",
+      "attribution": "Photo: Mehr Anand",
+      "name": "Centennial Common path",
+      "notes": null,
+      "lat": 42.337533,
+      "lng": -71.089622,
+      "heading": 34.9,
+      "difficulty": 2,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "own",
+      "source_id": "8093722d4714674d3587e38516c9eedf6c45725f",
+      "source_url": null,
+      "author": "Mehr Anand",
+      "license": "owned",
+      "attribution": "Photo: Mehr Anand",
+      "name": "Snell Quad in the snow",
+      "notes": null,
+      "lat": 42.338731,
+      "lng": -71.088314,
+      "heading": 333.4,
+      "difficulty": 2,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "own",
+      "source_id": "8a1b41cd78278ad6a2c3204b050475514fdd76ae",
+      "source_url": null,
+      "author": "Mehr Anand",
+      "license": "owned",
+      "attribution": "Photo: Mehr Anand",
+      "name": "Hayden Hall walkway",
+      "notes": null,
+      "lat": 42.339081,
+      "lng": -71.088661,
+      "heading": 328.5,
+      "difficulty": 3,
+      "crop": null,
+      "redact": null
+    },
+    {
+      "source": "own",
+      "source_id": "976a55d2a14b86fb1a90b51216591cc414fcfbf0",
+      "source_url": null,
+      "author": "Mehr Anand",
+      "license": "owned (text blurred)",
+      "attribution": "Photo: Mehr Anand",
+      "name": "Forsyth Street crosswalk",
+      "notes": null,
+      "lat": 42.339736,
+      "lng": -71.090317,
+      "heading": 209,
+      "difficulty": 2,
+      "crop": null,
+      "redact": [
+        {
+          "left": 0.09,
+          "top": 0.295,
+          "width": 0.88,
+          "height": 0.155
+        }
+      ]
+    },
     {
       "source": "wikimedia",
       "source_id": "112340414",
