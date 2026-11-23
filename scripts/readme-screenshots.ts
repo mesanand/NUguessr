@@ -10,7 +10,7 @@ import path from "node:path"
 import { chromium, devices, type Page } from "@playwright/test"
 import sharp from "sharp"
 
-const BASE = process.argv[2] ?? "https://nuguessr.vercel.app"
+const BASE = process.argv[2] ?? "https://www.mehr-anand.com/nuguessr"
 const OUT = path.resolve("docs/screenshots")
 const channel = process.env.E2E_CHANNEL ?? "msedge"
 

@@ -3,7 +3,7 @@
 GeoGuessr-style game for Northeastern's Boston campus. Owner/maintainer: Mehr Anand (`mesanand`). Fork of the HackBeanpot 2025 project by Philip Elbert, Joshua Chan, Oscar Ji and Alan Tai — keep their credit lines in README/LICENSE unchanged.
 
 - Repo: https://github.com/mesanand/NUguessr (push only here; never to `elbert-p/NUguessr`). Default branch `main`.
-- Vercel project `nuguessr` (team `mesanands-projects`): every push to `main` deploys to production (https://nuguessr.vercel.app).
+- **Where it runs:** https://www.mehr-anand.com/nuguessr, served by the `portfolio` Vercel project from mesanand/portfolio (`src/nuguessr/`, a second Vite page). This repo is no longer deployed on its own; it holds the original Next.js app, the Supabase migrations, the security tests and the photo pipeline. Game changes go in the portfolio repo.
 - Supabase project ref `phodqswvqmfwgwfltukj`, public storage bucket `images`.
 - Commit as `Mehr Anand <89043467+mesanand@users.noreply.github.com>`.
 
@@ -28,7 +28,7 @@ Next.js 15.1 App Router + TypeScript, Supabase (Postgres, Auth with Google, Stor
 - Local stack: `npx supabase start` (Docker), keys via `npx supabase status -o env`. Apply the cutover locally with `Get-Content -Raw supabase\cutover\*.sql | docker exec -i supabase_db_NUguessr psql -U postgres -d postgres`.
 
 ## Photo pipeline (`scripts/places/`, working data in git-ignored `data/`)
-fetch (`fetch-commons`, `fetch-mapillary`, `fetch-own`) → `osm-names` → curation JSON in `data/curation/` (`batch-*`, `rescue-*` with crops, `review-*` overrides) → `select.ts` → `publish.ts` (sharp: rotate, crop, ≤2000 px, WebP, strip ALL metadata, `<uuid>.webp`) → `export.ts` (`data/places.manifest.json`, committed).
+fetch (`fetch-commons`, `fetch-mapillary`, `fetch-own`) → `osm-names` → curation JSON in `data/curation/` (`batch-*`, `rescue-*` with crops, `review-*` overrides) → `select.ts` → `publish.ts` (sharp: rotate, crop, ≤2000 px, WebP, strip ALL metadata, `<uuid>.webp`) → `export.ts` (`data/places.manifest.json`, git-ignored: it's the answer key).
 - Only licensed sources with coordinates (Commons CC BY/BY-SA/CC0/PD, Mapillary CC BY-SA, own photos). Never Google Street View, Northeastern sites, news or social media.
 - Cropped photos must keep "(cropped)" in the license string (CC change notice).
 - Curate at full resolution: a sign unreadable in a 960 px thumbnail can be readable at 1920 px.

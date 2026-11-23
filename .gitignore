@@ -43,7 +43,7 @@ next-env.d.ts
 
 # places pipeline working data (only the published manifest is committed)
 /data/*
-!/data/places.manifest.json
+# The manifest lists every answer (name + coordinates); keep it local.
 !/data/own/
 /data/own/*
 !/data/own/.gitkeep

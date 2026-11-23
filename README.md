@@ -5,8 +5,7 @@
 **A GeoGuessr-style game for Northeastern University's Boston campus.**<br>
 Five real campus photos. 45 seconds each. Drop a pin, score by distance.
 
-[![Play now](https://img.shields.io/badge/PLAY_NOW-nuguessr.vercel.app-C51230?style=for-the-badge)](https://nuguessr.vercel.app)
-[![Portfolio](https://img.shields.io/badge/ON_MY_SITE-mehr--anand.com-1C1A17?style=for-the-badge)](https://www.mehr-anand.com/projects/nuguessr)
+[![Play now](https://img.shields.io/badge/PLAY_NOW-mehr--anand.com%2Fnuguessr-C51230?style=for-the-badge)](https://www.mehr-anand.com/nuguessr)
 
 ![Next.js](https://img.shields.io/badge/Next.js_15-000?logo=nextdotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
@@ -24,7 +23,9 @@ Five real campus photos. 45 seconds each. Drop a pin, score by distance.
 
 > **This is a community fork.** The original NUGuessr was built by **Philip Elbert, Joshua Chan, Oscar Ji, and Alan Tai** for HackBeanpot 2025, where it won "First Pit Stop - Best Beginner." This fork polishes and finishes several things the original Devpost submission called out as still in progress (see [Changes in this fork](#changes-in-this-fork)). All credit for the original concept, design, and build goes to that team.
 
-Maintained by Mehr Anand ([@mesanand](https://github.com/mesanand)). Live at <https://nuguessr.vercel.app>.
+Maintained by Mehr Anand ([@mesanand](https://github.com/mesanand)). Live at <https://www.mehr-anand.com/nuguessr>.
+
+> **Where it runs now.** The game is played at **[mehr-anand.com/nuguessr](https://www.mehr-anand.com/nuguessr)**. Its front end lives in [mesanand/portfolio](https://github.com/mesanand/portfolio) under `src/nuguessr/` (a second Vite page that calls the same database functions). This repo keeps the original Next.js app, the database migrations, the security tests and the photo pipeline, and it's no longer deployed on its own.
 
 <table>
 <tr>
@@ -81,7 +82,7 @@ Maintained by Mehr Anand ([@mesanand](https://github.com/mesanand)). Live at <ht
 
 **The experience**
 - **Tap to zoom** on the photo (2.5×, pans with the mouse).
-- **Keyboard shortcuts** for the whole game: <kbd>M</kbd> map, <kbd>S</kbd> satellite, <kbd>Enter</kbd> submit, <kbd>Z</kbd> zoom, <kbd>N</kbd> next round, <kbd>?</kbd> list. Full list at [`/shortcuts`](https://nuguessr.vercel.app/shortcuts).
+- **Keyboard shortcuts** for the whole game: <kbd>M</kbd> map, <kbd>S</kbd> satellite, <kbd>Enter</kbd> submit, <kbd>Z</kbd> zoom, <kbd>N</kbd> next round, <kbd>?</kbd> list. Full list at [`/shortcuts`](https://www.mehr-anand.com/nuguessr/shortcuts).
 - **Lit podium** for the top three on the leaderboard (twinkling bulbs and sweeping spotlights, still for people who prefer reduced motion), with your own row tagged "You".
 - **Phone-first.** Bottom-sheet map, large touch targets, outside-tap to close.
 
@@ -182,7 +183,7 @@ No service-role key is used at runtime: players go through RPCs, and admins writ
 | Backend | Supabase: Postgres, row-level security, security-definer RPCs, Auth (anonymous plus Google), Storage |
 | Photo pipeline | Node and tsx scripts, sharp (resize, crop, blur, metadata stripping), exifr, Overpass API |
 | Testing | Playwright (desktop and mobile end-to-end), a security suite run against live databases |
-| Hosting | Vercel (every push to `main` deploys) |
+| Hosting | Vercel, as part of mehr-anand.com (front end in the portfolio repo) |
 
 ## Running it yourself
 
@@ -224,7 +225,7 @@ flowchart LR
     N --> C["curate<br>data/curation/*.json<br>or /admin/curate"]
     C --> S["select<br>one photo per spot,<br>area caps"]
     S --> P["publish<br>crop · blur · strip metadata ·<br>UUID.webp · insert row"]
-    P --> E["export<br>data/places.manifest.json"]
+    P --> E["export<br>data/places.manifest.json<br>(local backup, not committed)"]
 ```
 
 ```bash
@@ -235,7 +236,7 @@ npm run places:names             # suggest names from nearby OpenStreetMap featu
 npm run places:coverage          # candidate counts per campus area
 npx tsx scripts/places/select.ts # curation decisions -> data/selected.json
 npm run places:publish           # strip metadata, resize, upload <uuid>.webp, insert places rows
-npm run places:export            # back up published places to data/places.manifest.json
+npm run places:export            # back up published places to data/places.manifest.json (git-ignored: it's the answer key)
 npx tsx scripts/places/build-basemap.ts   # rebuild the label-free guess-map basemap
 ```
 
@@ -284,7 +285,7 @@ Design decisions and their reasons are in [`DECISIONS.md`](DECISIONS.md).
 
 ## Attribution and licensing
 
-- **Photos** come from Wikimedia Commons (CC BY, CC BY-SA, CC0 or public domain) and the maintainer's own photos. Each place stores its author, license and source. The credit appears under the photo after every guess, and all credits are listed at [`/credits`](https://nuguessr.vercel.app/credits). Edited photos say "(cropped)" or "(text blurred)" in their credit, as CC licenses require.
+- **Photos** come from Wikimedia Commons (CC BY, CC BY-SA, CC0 or public domain) and the maintainer's own photos. Each place stores its author, license and source. The credit appears under the photo after every guess, and all credits are listed at [`/credits`](https://www.mehr-anand.com/nuguessr/credits). Edited photos say "(cropped)" or "(text blurred)" in their credit, as CC licenses require.
 - **Map data** © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL). **Satellite imagery** © Esri and its partners.
 - **Code:** MIT (see [`LICENSE`](LICENSE)).
 
