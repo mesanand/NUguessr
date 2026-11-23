@@ -44,7 +44,9 @@ export function PhotoCredit({ credit, className }: { credit: PhotoCreditData | n
   const author = cleanText(credit?.author)
   const own = credit?.source === "own"
   const license = cleanText(credit?.license)
-  const hasLicense = license !== null && !(own && /^owned$/i.test(license))
+  // Own photos' license is "owned" plus an optional change note; the note is
+  // shown after the name, so nothing else is listed for them.
+  const hasLicense = license !== null && !(own && /^owned$/i.test(parseLicense(license)?.text ?? ""))
   // Own photos are credited by name only (no "via" source line).
   const label = own ? null : sourceLabel(credit?.source)
   const href = own ? null : safeHttpUrl(credit?.sourceUrl)
