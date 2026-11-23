@@ -110,7 +110,7 @@ grant execute on function public.can_upload_submission() to authenticated;
 
 -- Players (anonymous sessions are `authenticated` too) may upload only into
 -- their own folder, only image extensions, only within quota. They may see
--- and delete only their own objects (needed to withdraw). No public read.
+-- only their own objects, and can't delete or replace them. No public read.
 drop policy if exists "Players upload own submissions" on storage.objects;
 create policy "Players upload own submissions"
   on storage.objects for insert to authenticated
