@@ -3,9 +3,11 @@
 # NUGuessr
 
 **A GeoGuessr-style game for Northeastern University's Boston campus.**<br>
-Five real campus photos. 45 seconds each. Drop a pin, score by distance.
+Five real campus photos. 45 seconds each. Drop a pin, score by distance.<br>
+Know a spot nobody would guess? Send it in and it joins the game with your name on it.
 
 [![Play now](https://img.shields.io/badge/PLAY_NOW-mehr--anand.com%2Fnuguessr-C51230?style=for-the-badge)](https://www.mehr-anand.com/nuguessr)
+[![Add your photo](https://img.shields.io/badge/ADD_YOUR_PHOTO-%2Fnuguessr%2Fcontribute-1A1A1A?style=for-the-badge)](https://www.mehr-anand.com/nuguessr/contribute)
 
 ![Next.js](https://img.shields.io/badge/Next.js_15-000?logo=nextdotjs&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
@@ -51,6 +53,7 @@ Maintained by Mehr Anand ([@mesanand](https://github.com/mesanand)). Live at <ht
 ## Contents
 
 - [How to play](#how-to-play)
+- [Add your photo](#add-your-photo)
 - [Features](#features)
 - [How a round works](#how-a-round-works)
 - [Fair play and security](#fair-play-and-security)
@@ -71,6 +74,48 @@ Maintained by Mehr Anand ([@mesanand](https://github.com/mesanand)). Live at <ht
 | **3. Score** | Up to **5,000 points** a round: full marks within 12 yards, falling to 0 at 500 yards. A perfect game is **25,000**. |
 | **4. Sign the board** | No account needed. After a game, type any name to put your best score on the leaderboard. |
 
+## Add your photo
+
+The best rounds are the ones only regulars would know: a stairwell, a study nook, the view from a classroom window. Since November 2026, anyone can send one in at **[mehr-anand.com/nuguessr/contribute](https://www.mehr-anand.com/nuguessr/contribute)**. If it's picked, it goes into the game with their name in the credit.
+
+<img src="docs/screenshots/contribute.webp" alt="The Add your photo page: Know a spot nobody would guess? Send us your campus photos, with tips and a Choose photos button" width="100%">
+
+<table>
+<tr>
+<td align="center" width="50%"><b>Pin where you stood</b><br><sub>GPS read in the browser, or tap the map; indoors welcome</sub></td>
+<td align="center" width="50%"><b>Credit, email, consent</b><br><sub>Your name or anonymous; nothing sends until all four boxes are ticked</sub></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/contribute-pin.webp" alt="Step 2, Where was it taken: a photo card with a pin placed on the satellite campus map, Taken indoors ticked and the building set to Snell Library"></td>
+<td><img src="docs/screenshots/contribute-send.webp" alt="Step 3, Credit and send: a credit name, a northeastern.edu email, four ticked consent boxes and a Send photo button"></td>
+</tr>
+</table>
+
+<sub>Screenshots use a synthetic test image and a demo pin; nothing was sent.</sub>
+
+**How it works**
+
+1. **Pick photos.** If the phone kept the location, the page reads the GPS right in the browser and drops the pin for you. No GPS, or a location off campus? The map opens and you tap where you were standing.
+2. **Describe it.** Tick *Taken indoors* and name the building, plus where inside if you like.
+3. **Credit and send.** Choose a credit name (or stay anonymous as "NUguessr community") and give your **@northeastern.edu email**. It's only for following up on a photo or a takedown; it's never shown and never verified. Then confirm four things: you took the photo, **you know where it was taken and the pin is where you stood**, NUguessr may crop, blur and show it, and nobody in it can be recognized without their OK.
+4. **Track it.** Your submissions show as *Waiting for review*, *In the game* or *Not used*, and you can withdraw one that's still waiting.
+
+**What happens to the photo**
+
+- The original goes to a **private** storage bucket, in a folder only your session can write to. Nobody else can see or download it, other players included.
+- Every photo is reviewed at full resolution with the same rules as the rest of the pool. Signs that name the place and faces get blurred or cropped.
+- The published copy is **re-encoded with all metadata stripped** (GPS, device, timestamps) under a random file name. Then the original is deleted.
+
+**Guardrails**, all enforced in Postgres rather than the browser:
+
+| Rule | Where |
+|---|---|
+| Uploads only into your own folder, images only, 15 MB max | Storage RLS policy + bucket limits |
+| 20 uploads per player per day and 150 per day site-wide | `can_upload_submission()` in the upload policy |
+| Pin inside the campus bounds, current consent version, a `@northeastern.edu` email | `submit_photo()` |
+| Players can't read the submissions table, not even their own row | RLS: admin-only; `my_submissions()` returns status only |
+| Players can't delete uploads (that would reset the daily quota) | No player delete policy; a maintainer script cleans up |
+
 ## Features
 
 **The game**
@@ -79,6 +124,7 @@ Maintained by Mehr Anand ([@mesanand](https://github.com/mesanand)). Live at <ht
 - **Transit-map design.** Rounds are stops on a line; the result screen is a station sign; the leaderboard is a departures board.
 - **Results that teach.** After each guess: the place name, both pins with a dashed line between them, the distance, your points and the photo credit.
 - **Spoiler-free sharing.** The summary copies a score card like `●—◐—○—●—◐` with no place names.
+- **Player-sent photos.** [Add your photo](#add-your-photo) takes campus shots (indoor ones too) from players, with GPS read in the browser and a private review queue.
 
 **The experience**
 - **Tap to zoom** on the photo (2.5×, pans with the mouse).
@@ -129,11 +175,13 @@ sequenceDiagram
 | Editing your own score or role | Players can update only their leaderboard name. Stats are written only by `finish_game`; `role` isn't client-writable. |
 | Double submits and replays | Rounds must be submitted in order, once each; nothing is accepted after a game is finished. |
 | Spamming games | Per-player locks and hourly caps, plus a global cap and cleanup for guest games. |
+| Snooping on or flooding photo submissions | Originals sit in a private bucket that only their uploader can read. The submissions table is admin-only. Per-player and site-wide daily caps and a 15 MB file limit keep storage bounded. See [Add your photo](#add-your-photo). |
 
 Run the checks yourself against any deployment with the public key:
 
 ```bash
 npx tsx --env-file=.env.local tests/security/game-security.ts --expect-locked --check-images 5
+npx tsx --env-file=.env.local tests/security/contribute-security.ts   # 30 submission privacy and abuse checks
 ```
 
 **Known limitation.** With 51 photos at stable public URLs, a determined script could collect the answer key by playing many games and then post a perfect leaderboard score. Casual players can't see answers early. The real fix is serving photos per game from a private bucket and growing the pool; it's the top item on the roadmap.
@@ -171,6 +219,7 @@ flowchart LR
 | Guess map basemap | `public/map/campus-basemap.json` | OSM geometry with no names or tags, built by `scripts/places/build-basemap.ts`. Satellite: Esri World Imagery. |
 | Admin | `/admin`, `/admin/curate` | Gated in middleware, in each page and in every server action via `is_admin()`. |
 | Shortcuts | `src/lib/shortcuts.ts` | One list drives the handlers, the <kbd>?</kbd> overlay and `/shortcuts`. |
+| Photo submissions | `supabase/migrations/*community_photo_submissions.sql`, `scripts/places/fetch-submissions.ts`, `scripts/places/submissions-sync.ts` | Private `submissions` bucket, `photo_submissions` table, `submit_photo` / `my_submissions` / `withdraw_submission`. The page itself lives in the portfolio repo. |
 
 No service-role key is used at runtime: players go through RPCs, and admins write through RLS policies with their own session.
 
@@ -213,7 +262,7 @@ update public.users set role = 'admin' where email = 'you@example.com';
 | `npm run lint` / `typecheck` | ESLint and `tsc --noEmit` |
 | `npm run test:e2e` | Playwright on desktop and mobile; set `E2E_BASE_URL` to test a deployment |
 | `npm run places:*` | Photo pipeline steps (below) |
-| `npm run readme:shots` | Regenerates the screenshots in this README from the live site |
+| `npm run readme:shots` | Regenerates the screenshots in this README from the live site (`-- --contribute` for just the Add-your-photo shots; it never sends anything) |
 
 ## Photo pipeline
 
@@ -255,13 +304,17 @@ Own photos are credited by name only: "Photo: Your Name", plus "(text blurred)" 
 
 ### Community photos ("Add your photo")
 
-Players can send their own campus photos, including indoor ones (classrooms, stairwells, study spots), from [`/nuguessr/contribute`](https://www.mehr-anand.com/nuguessr/contribute):
+What players see is described in [Add your photo](#add-your-photo). On the maintainer's side, submissions join the same pipeline:
 
-1. The browser reads the photo's GPS (if the phone kept it) and drops the pin; the contributor confirms or places it by hand, and says which building for indoor shots.
-2. The **original** goes straight to a **private** `submissions` bucket under the player's own folder, and `submit_photo()` records the pin, credit and consent. Storage RLS and the RPC enforce ownership, campus bounds, consent and rate limits.
-3. `npm run places:fetch:submissions` turns pending submissions into `community` candidates; curate, select and publish as usual; `npm run places:submissions:sync` marks them approved/rejected and deletes the originals.
+```bash
+npm run places:fetch:submissions      # pending submissions -> "community" candidates (needs the service key)
+# curate in data/curation/review-*.json, then:
+npx tsx scripts/places/select.ts
+npm run places:publish                # strip metadata, upload <uuid>.webp, insert places rows
+npm run places:submissions:sync       # mark approved/rejected, delete originals (withdrawn and orphaned ones too)
+```
 
-Credit is "Photo: {their name}" or "Photo: NUguessr community". Details, curation rules and takedowns: [`docs/community-photos.md`](docs/community-photos.md).
+Credit is "Photo: {their name}" or "Photo: NUguessr community". Each row keeps the submitter's email so a bad submission can be traced. It's unverified, so it's a lead rather than proof. Curation rules and takedowns: [`docs/community-photos.md`](docs/community-photos.md).
 
 ## Testing
 
@@ -286,7 +339,8 @@ src/
   lib/                 campus bounds, scoring constants, player (anonymous auth), shortcuts
 supabase/
   migrations/          schema, RPCs, RLS (applied in order)
-scripts/places/        photo pipeline: fetch, names, select, publish, export, basemap
+scripts/places/        photo pipeline: fetch, names, select, publish, export, basemap, submissions
+scripts/fixtures/      synthetic test photos for the README screenshots
 tests/
   e2e/                 Playwright specs
   security/            anon-key leak and integrity checks
@@ -297,7 +351,7 @@ Design decisions and their reasons are in [`DECISIONS.md`](DECISIONS.md).
 
 ## Attribution and licensing
 
-- **Photos** come from Wikimedia Commons (CC BY, CC BY-SA, CC0 or public domain) the maintainer's own photos and photos players send in through "Add your photo" (credited by the name they choose). Each place stores its author, license and source. The credit appears under the photo after every guess, and all credits are listed at [`/credits`](https://www.mehr-anand.com/nuguessr/credits). Edited photos say "(cropped)" or "(text blurred)" in their credit, as CC licenses require.
+- **Photos** come from Wikimedia Commons (CC BY, CC BY-SA, CC0 or public domain), the maintainer's own photos, and photos players send in through "Add your photo" (credited by the name they choose). Each place stores its author, license and source. The credit appears under the photo after every guess, and all credits are listed at [`/credits`](https://www.mehr-anand.com/nuguessr/credits). Edited photos say "(cropped)" or "(text blurred)" in their credit, as CC licenses require.
 - **Map data** © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL). **Satellite imagery** © Esri and its partners.
 - **Code:** MIT (see [`LICENSE`](LICENSE)).
 
@@ -317,6 +371,7 @@ The original Devpost submission described NUGuessr as a "functional prototype" w
 - A full visual redesign (transit-map style), tap-to-zoom photos, keyboard shortcuts with a `/shortcuts` page, and a lit leaderboard podium.
 - No-login play: anonymous players who pick a name for the leaderboard.
 - The map widened to include Christian Science Plaza.
+- [Add your photo](#add-your-photo): player-sent photos with in-browser GPS pinning, a private review queue and abuse limits enforced in the database.
 
 ### Roadmap
 
