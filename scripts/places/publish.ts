@@ -244,7 +244,7 @@ function validateSelected(raw: unknown): SelectedPlace[] {
   const seen = new Set<string>()
   raw.forEach((r: Record<string, unknown>, i) => {
     const problems: string[] = []
-    if (!["wikimedia", "mapillary", "own"].includes(String(r.source))) problems.push("source")
+    if (!["wikimedia", "mapillary", "own", "community"].includes(String(r.source))) problems.push("source")
     if (!r.source_id) problems.push("source_id")
     if (typeof r.image_remote_url !== "string" || !r.image_remote_url) problems.push("image_remote_url")
     if (typeof r.lat !== "number" || Math.abs(r.lat) > 90) problems.push("lat")
@@ -369,8 +369,8 @@ function placeRow(p: SelectedPlace, imagePath: string) {
     notes: p.notes,
     source: p.source,
     source_id: p.source_id,
-    // own photos point at a local file; never expose that path as a public link
-    source_url: p.source === "own" ? null : p.source_url,
+    // own/community photos point at a local file; never expose that path as a public link
+    source_url: p.source === "own" || p.source === "community" ? null : p.source_url,
     author: p.author,
     license: p.license,
     attribution: p.attribution,

@@ -64,7 +64,7 @@ function normalize(p: Loose, fallback?: Loose): ManifestEntry | null {
     source,
     source_id: String(pick('source_id') ?? ''),
     // own photos point at a local file; never record that path
-    source_url: source === 'own' ? null : str(pick('source_url')),
+    source_url: source === 'own' || source === 'community' ? null : str(pick('source_url')),
     author: str(pick('author')),
     license: str(pick('license')),
     attribution: str(pick('attribution')),

@@ -2,7 +2,7 @@ import Link from "next/link"
 import { MainNav } from "@/components/main-nav"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { createClient } from "@/lib/supabase/server"
-import { cleanText, sourceHomeUrl, sourceLabel } from "@/components/game/credit-utils"
+import { cleanText, isContributed, sourceHomeUrl, sourceLabel } from "@/components/game/credit-utils"
 import { LicenseText } from "@/components/game/photo-credit"
 
 // Attribution for every live photo. Deliberately lists only author, license
@@ -76,7 +76,7 @@ export default async function CreditsPage() {
                 {rows.map((row, i) => {
                   const author = cleanText(row.author) ?? "Unknown author"
                   const hasLicense = cleanText(row.license) !== null
-                  const label = row.source === "own" ? null : sourceLabel(row.source)
+                  const label = isContributed(row.source) ? null : sourceLabel(row.source)
                   const home = sourceHomeUrl(row.source)
                   return (
                     <li

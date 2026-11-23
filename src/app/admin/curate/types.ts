@@ -20,7 +20,7 @@ export type AiScores = {
 
 export type CandidateRow = {
   id: number
-  source: "mapillary" | "wikimedia" | "own"
+  source: "mapillary" | "wikimedia" | "own" | "community"
   source_id: string
   source_url: string | null
   image_remote_url: string

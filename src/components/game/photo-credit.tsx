@@ -1,6 +1,6 @@
 import type { PhotoCredit as PhotoCreditData } from "@/lib/game-types"
 import { cn } from "@/lib/utils"
-import { cleanText, parseLicense, safeHttpUrl, sourceLabel } from "./credit-utils"
+import { cleanText, isContributed, parseLicense, safeHttpUrl, sourceLabel } from "./credit-utils"
 
 const LINK_CLASS = "font-medium text-foreground underline underline-offset-2 hover:text-primary"
 
@@ -14,7 +14,7 @@ export function LicenseText({ license, className }: { license: string | null | u
   if (!parts) return null
   // Contributors' own photos ("owned") have no public license to show; keep
   // only the change note, e.g. "(text blurred)".
-  if (/^owned$/i.test(parts.text)) {
+  if (/^(owned|contributed)$/i.test(parts.text)) {
     return parts.note ? <span className={className}>{parts.note}</span> : null
   }
   return (
@@ -42,11 +42,13 @@ function parseLicenseNote(license: string): string | null {
 
 export function PhotoCredit({ credit, className }: { credit: PhotoCreditData | null | undefined; className?: string }) {
   const author = cleanText(credit?.author)
-  const own = credit?.source === "own"
+  const own = isContributed(credit?.source)
   const license = cleanText(credit?.license)
-  // Own photos' license is "owned" plus an optional change note; the note is
-  // shown after the name, so nothing else is listed for them.
-  const hasLicense = license !== null && !(own && /^owned$/i.test(parseLicense(license)?.text ?? ""))
+  // Own and community photos' license is "owned"/"contributed" plus an
+  // optional change note; the note is shown after the name, so nothing else
+  // is listed for them.
+  const hasLicense =
+    license !== null && !(own && /^(owned|contributed)$/i.test(parseLicense(license)?.text ?? ""))
   // Own photos are credited by name only (no "via" source line).
   const label = own ? null : sourceLabel(credit?.source)
   const href = own ? null : safeHttpUrl(credit?.sourceUrl)

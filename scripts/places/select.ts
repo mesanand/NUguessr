@@ -6,7 +6,10 @@
  *
  * Rules:
  *  - only `approve` decisions that satisfy the approval thresholds
- *  - at most one place per ~25 m cluster (keeps the best-scored photo)
+ *  - community photos may be indoors (is_outdoor_campus_scene is not required)
+ *  - at most one place per ~25 m cluster (keeps the best-scored photo); an
+ *    indoor shot and an outdoor shot at the same spot are different views,
+ *    and so are indoor shots with different names (two rooms in one building)
  *  - per-area caps so no single spot dominates (Ruggles, ISEC, ...)
  *  - stops at --target (default 60)
  *
@@ -94,7 +97,7 @@ function main() {
   const approved = [...decisions.values()].filter(
     (d) =>
       d.decision === "approve" &&
-      d.is_outdoor_campus_scene &&
+      (d.is_outdoor_campus_scene || d.source === "community") &&
       d.quality >= 3 &&
       !d.giveaway &&
       d.recognizable >= 2 &&
@@ -107,6 +110,7 @@ function main() {
   approved.sort((a, b) => score(b) - score(a))
 
   const picked: Decision[] = []
+  const isIndoor = (d: Decision) => byKey.get(key(d))?.submission?.indoor === true
   const perArea = new Map<string, number>()
   const perName = new Map<string, number>()
   const skipped: string[] = []
@@ -115,7 +119,10 @@ function main() {
     // Same view = very close (<10 m) or close (<CLUSTER_M) with the same place name.
     const near = picked.find((p) => {
       const m = meters(p, d)
-      return m < 10 || (m < CLUSTER_M && normName(p.name) === normName(d.name))
+      const sameName = normName(p.name) === normName(d.name)
+      if (isIndoor(p) !== isIndoor(d)) return false // inside vs outside: never the same view
+      if (isIndoor(d)) return m < CLUSTER_M && sameName // two rooms in one building are different views
+      return m < 10 || (m < CLUSTER_M && sameName)
     })
     if (near) {
       skipped.push(`${d.source_id} (${d.name}) within ${CLUSTER_M} m of ${near.source_id}`)
@@ -142,7 +149,7 @@ function main() {
       source: c.source,
       source_id: c.source_id,
       // own photos point at a local file; never expose that path as a public link
-      source_url: c.source === "own" ? null : c.source_url,
+      source_url: c.source === "own" || c.source === "community" ? null : c.source_url,
       image_remote_url: publishUrl(c),
       author: c.author,
       // CC licenses require indicating changes; cropped photos say so in the credit.

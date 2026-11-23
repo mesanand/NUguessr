@@ -5,11 +5,21 @@ const SOURCE_LABELS: Record<string, string> = {
   mapillary: "Mapillary",
   wikimedia: "Wikimedia Commons",
   own: "NUguessr contributors",
+  community: "NUguessr community",
 }
 
 export function sourceLabel(source: string | null | undefined): string | null {
   if (!source) return null
   return SOURCE_LABELS[source] ?? null
+}
+
+/**
+ * Contributors' photos ("own" from the maintainers, "community" from the
+ * Add-your-photo page) are credited by name only: no license deed, no
+ * source link.
+ */
+export function isContributed(source: string | null | undefined): boolean {
+  return source === "own" || source === "community"
 }
 
 /** Only http(s) URLs are ever used as hrefs (never javascript:, data:, ...). */

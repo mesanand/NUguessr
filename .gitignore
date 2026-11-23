@@ -47,6 +47,8 @@ next-env.d.ts
 !/data/own/
 /data/own/*
 !/data/own/.gitkeep
+# community submission originals keep full EXIF (GPS, device): never commit
+/data/submissions/
 
 # playwright
 /test-results/

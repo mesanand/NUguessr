@@ -3,7 +3,7 @@
 // agents write CurationDecision[] to data/curation/batch-*.json; publish.ts
 // reads both.
 
-export type CandidateSource = 'mapillary' | 'wikimedia' | 'own'
+export type CandidateSource = 'mapillary' | 'wikimedia' | 'own' | 'community'
 
 export interface NearbyFeature {
   name: string
@@ -39,6 +39,25 @@ export interface Candidate {
   nearby_features?: NearbyFeature[]
   /** Grid cell id (see lib/geo.ts cellId). */
   cell?: string
+  /**
+   * Community submissions only (source 'community', source_id = submission id).
+   * ADMIN-ONLY context for curation; never published.
+   */
+  submission?: SubmissionContext
+}
+
+export interface SubmissionContext {
+  indoor: boolean
+  building: string | null
+  spot_description: string | null
+  location_source: 'exif' | 'exif_adjusted' | 'pin'
+  /** GPS from the original file, if it had any. */
+  exif_lat: number | null
+  exif_lng: number | null
+  /** Metres between the contributor's pin and the photo's own GPS. */
+  exif_pin_distance_m: number | null
+  credit_name: string | null
+  submitted_at: string
 }
 
 export interface CurationDecision {

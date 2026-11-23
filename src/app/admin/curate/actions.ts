@@ -180,7 +180,7 @@ export async function approveAndPublish(id: number, edits: CandidateEdits = {}):
         source: cand.source,
         source_id: cand.source_id,
         // own photos point at a local file; never expose that path as a public link
-        source_url: cand.source === "own" ? null : cand.source_url,
+        source_url: cand.source === "own" || cand.source === "community" ? null : cand.source_url,
         author: cand.author,
         license: cand.license,
         attribution: cand.attribution,

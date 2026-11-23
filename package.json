@@ -11,12 +11,15 @@
     "places:fetch:commons": "tsx --env-file-if-exists=.env.local scripts/places/fetch-commons.ts",
     "places:fetch:mapillary": "tsx --env-file-if-exists=.env.local scripts/places/fetch-mapillary.ts",
     "places:fetch:own": "tsx --env-file-if-exists=.env.local scripts/places/fetch-own.ts",
+    "places:fetch:submissions": "tsx --env-file-if-exists=.env.local scripts/places/fetch-submissions.ts",
+    "places:submissions:sync": "tsx --env-file-if-exists=.env.local scripts/places/submissions-sync.ts",
     "places:names": "tsx --env-file-if-exists=.env.local scripts/places/osm-names.ts",
     "places:coverage": "tsx --env-file-if-exists=.env.local scripts/places/coverage.ts",
     "places:push": "tsx --env-file-if-exists=.env.local scripts/places/push.ts",
     "places:publish": "tsx --env-file-if-exists=.env.local scripts/places/publish.ts",
     "places:export": "tsx --env-file-if-exists=.env.local scripts/places/export.ts",
     "test:e2e": "playwright test",
+    "test:sql": "node tests/sql/contribute.pglite.mjs",
     "readme:shots": "tsx scripts/readme-screenshots.ts",
     "places:labels": "tsx --env-file-if-exists=.env.local scripts/places/build-labels.ts"
   },
@@ -50,6 +53,7 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.6.0",
     "@eslint/eslintrc": "^3",
     "@playwright/test": "^1.65.1",
     "@types/leaflet": "^1.9.16",

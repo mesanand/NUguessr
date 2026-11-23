@@ -253,12 +253,24 @@ npx tsx scripts/places/build-basemap.ts   # rebuild the label-free guess-map bas
 
 Own photos are credited by name only: "Photo: Your Name", plus "(text blurred)" where something was blurred.
 
+### Community photos ("Add your photo")
+
+Players can send their own campus photos, including indoor ones (classrooms, stairwells, study spots), from [`/nuguessr/contribute`](https://www.mehr-anand.com/nuguessr/contribute):
+
+1. The browser reads the photo's GPS (if the phone kept it) and drops the pin; the contributor confirms or places it by hand, and says which building for indoor shots.
+2. The **original** goes straight to a **private** `submissions` bucket under the player's own folder, and `submit_photo()` records the pin, credit and consent. Storage RLS and the RPC enforce ownership, campus bounds, consent and rate limits.
+3. `npm run places:fetch:submissions` turns pending submissions into `community` candidates; curate, select and publish as usual; `npm run places:submissions:sync` marks them approved/rejected and deletes the originals.
+
+Credit is "Photo: {their name}" or "Photo: NUguessr community". Details, curation rules and takedowns: [`docs/community-photos.md`](docs/community-photos.md).
+
 ## Testing
 
 ```bash
 npm run test:e2e                                    # full games on desktop (1366×860) and mobile (390×844)
 npx tsx tests/security/game-security.ts --expect-locked --check-images 5
 npx tsx tests/security/signed-in.ts                 # local stack only: stats and role checks
+npm run test:sql                                    # offline: replays all migrations on PGlite, checks submission policies/RPCs
+npx tsx --env-file-if-exists=.env.local tests/security/contribute-security.ts   # live: submission privacy/abuse checks
 ```
 
 The end-to-end suite plays complete games, including a timed-out round and a mid-round reload. Before each guess it asserts that nothing in the DOM, the page title, the image file name or any server-action response contains an answer. It also checks that the map stays locked to campus.
@@ -285,7 +297,7 @@ Design decisions and their reasons are in [`DECISIONS.md`](DECISIONS.md).
 
 ## Attribution and licensing
 
-- **Photos** come from Wikimedia Commons (CC BY, CC BY-SA, CC0 or public domain) and the maintainer's own photos. Each place stores its author, license and source. The credit appears under the photo after every guess, and all credits are listed at [`/credits`](https://www.mehr-anand.com/nuguessr/credits). Edited photos say "(cropped)" or "(text blurred)" in their credit, as CC licenses require.
+- **Photos** come from Wikimedia Commons (CC BY, CC BY-SA, CC0 or public domain) the maintainer's own photos and photos players send in through "Add your photo" (credited by the name they choose). Each place stores its author, license and source. The credit appears under the photo after every guess, and all credits are listed at [`/credits`](https://www.mehr-anand.com/nuguessr/credits). Edited photos say "(cropped)" or "(text blurred)" in their credit, as CC licenses require.
 - **Map data** © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL). **Satellite imagery** © Esri and its partners.
 - **Code:** MIT (see [`LICENSE`](LICENSE)).
 

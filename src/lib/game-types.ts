@@ -7,7 +7,7 @@ export interface LatLng {
   lng: number
 }
 
-export type PhotoSource = "mapillary" | "wikimedia" | "own"
+export type PhotoSource = "mapillary" | "wikimedia" | "own" | "community"
 
 export interface PhotoCredit {
   author: string | null

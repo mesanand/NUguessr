@@ -34,6 +34,13 @@ fetch (`fetch-commons`, `fetch-mapillary`, `fetch-own`) → `osm-names` → cura
 - Curate at full resolution: a sign unreadable in a 960 px thumbnail can be readable at 1920 px.
 - Be polite to Wikimedia: standard thumbnail widths (960/1280/1920), rate limits, the shared `politeFetch` User-Agent.
 
+## Community submissions ("Add your photo", Nov 2026)
+- Migration `20261123000001_community_photo_submissions`: private bucket `submissions` (originals, full EXIF), table `photo_submissions` (RLS: admins only; players never read it), RPCs `submit_photo`, `my_submissions` (status only, no contact/coords/notes), `withdraw_submission`. Source `community`, license `contributed`, credited by name only like `own`.
+- Storage RLS: players upload only to `submissions/<auth.uid()>/<file>`, image extensions only, quota 30 uploads/day (`can_upload_submission()`); read/delete own objects only; no update policy. `submit_photo` re-checks path ownership, that the object exists, campus bbox (`on_campus()`), consent version (`contribute_consent_version()`, keep in sync with `CONSENT_VERSION` in the portfolio's `src/nuguessr/lib/contribute.ts`), 20/day per player, 500/day global.
+- The answer is the contributor's **pin**, not the photo's EXIF (iOS often strips GPS; indoor GPS drifts). EXIF coords are stored only to flag disagreements.
+- Pipeline: `places:fetch:submissions` → names → curate (rules in `docs/community-photos.md`; indoor allowed for `community`) → `select.ts` → `publish` → `places:submissions:sync` (approve/reject, delete originals from the bucket, sweep orphan uploads). Never keep originals in the cloud after a decision; `data/submissions/` is git-ignored.
+- Tests: `npm run test:sql` (PGlite, offline), `tests/security/contribute-security.ts` (live, anon key only). The UI lives in the portfolio repo (`src/nuguessr/pages/Contribute.tsx`, `components/contribute/*`, e2e `src/test/e2e/nuguessr-contribute.spec.ts`).
+
 ## Commands
 ```
 npm run dev | build | lint | typecheck
