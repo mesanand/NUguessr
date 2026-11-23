@@ -67,9 +67,9 @@ async function expectErr(label, re, fn) { try { await fn(); fail++; console.log(
 
 const u1 = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
 const pathA = `${A}/${u1}.jpg`
-const V = "2026-11-v1"
-const submit = (uid, path, lat = 42.339, lng = -71.089, consent = V, src = "exif") =>
-  as(uid, `select public.submit_photo($1, $2, $3, $4, 42.3391, -71.0891, now() - interval '1 day', true, 'Richards Hall', 'room 310', 'Shourya', 'me@x.com', 'IMG_1.HEIC', $5) as id`, [path, lat, lng, src, consent])
+const V = "2026-11-v2"
+const submit = (uid, path, lat = 42.339, lng = -71.089, consent = V, src = "exif", email = " Me.Husky@Northeastern.edu ") =>
+  as(uid, `select public.submit_photo($1, $2, $3, $4, 42.3391, -71.0891, now() - interval '1 day', true, 'Richards Hall', 'room 310', 'Test Player', $6, 'IMG_1.HEIC', $5) as id`, [path, lat, lng, src, consent, email])
 
 console.log("storage policies")
 await expectOk("A uploads into own folder", () => as(A, `insert into storage.objects (bucket_id, name) values ('submissions', $1)`, [pathA]))
@@ -92,6 +92,9 @@ await expectErr("missing file", /file_missing/, () => submit(A, `${A}/bbbbbbbb-b
 await expectErr("off campus", /off_campus/, () => submit(A, pathA, 42.36, -71.06))
 await expectErr("NaN coords", /off_campus/, () => submit(A, pathA, NaN, -71.09))
 await expectErr("bad location source", /bad_location/, () => submit(A, pathA, 42.339, -71.089, V, "gps"))
+await expectErr("no email", /bad_email/, () => submit(A, pathA, 42.339, -71.089, V, "exif", null))
+await expectErr("non-Northeastern email", /bad_email/, () => submit(A, pathA, 42.339, -71.089, V, "exif", "me@gmail.com"))
+await expectErr("lookalike domain", /bad_email/, () => submit(A, pathA, 42.339, -71.089, V, "exif", "me@northeastern.edu.evil.com"))
 const ok = await expectOk("valid submission", () => submit(A, pathA))
 await expectErr("duplicate", /already_submitted/, () => submit(A, pathA))
 
@@ -101,10 +104,11 @@ sel.rows.length === 0 ? (pass++, console.log("  ok   player selecting photo_subm
 await expectErr("player cannot insert photo_submissions", /permission denied/, () => as(A, `insert into public.photo_submissions (user_id, storage_path, lat, lng, location_source, consent_version) values ('${A}', 'x', 1, 1, 'pin', 'v')`))
 await expectErr("anon cannot call my_submissions", /permission denied/, () => as(null, `select * from public.my_submissions()`))
 const mine = await as(A, `select * from public.my_submissions()`)
-mine.rows.length === 1 && !("contact" in mine.rows[0]) && !("lat" in mine.rows[0]) ? (pass++, console.log("  ok   my_submissions returns own row without contact/coords")) : (fail++, console.log("  FAIL my_submissions", mine.rows))
+mine.rows.length === 1 && !("submitter_email" in mine.rows[0]) && !("lat" in mine.rows[0]) ? (pass++, console.log("  ok   my_submissions returns own row without email/coords")) : (fail++, console.log("  FAIL my_submissions", mine.rows))
 const theirs = await as(B, `select * from public.my_submissions()`)
 theirs.rows.length === 0 ? (pass++, console.log("  ok   B sees none of A's submissions")) : (fail++, console.log("  FAIL B sees A's submissions"))
-const stored = await db.query(`select credit_name, building, contact, exif_lat from public.photo_submissions`)
+const stored = await db.query(`select credit_name, building, submitter_email, exif_lat from public.photo_submissions`)
+stored.rows[0]?.submitter_email === "me.husky@northeastern.edu" ? (pass++, console.log("  ok   email stored trimmed and lower-cased")) : (fail++, console.log("  FAIL email", stored.rows[0]))
 console.log("  stored row:", stored.rows[0])
 
 console.log("withdraw")
@@ -113,7 +117,8 @@ await expectErr("B cannot withdraw A's", /not_withdrawable/, () => as(B, `select
 const w = await expectOk("A withdraws own pending", () => as(A, `select public.withdraw_submission($1) p`, [sid]))
 w?.rows?.[0]?.p === pathA ? (pass++, console.log("  ok   returns storage path")) : (fail++, console.log("  FAIL path", w?.rows))
 await expectErr("cannot withdraw twice", /not_withdrawable/, () => as(A, `select public.withdraw_submission($1)`, [sid]))
-await expectOk("A deletes own original", () => as(A, `delete from storage.objects where name = $1`, [pathA]))
+const aDel = await as(A, `delete from storage.objects where name = $1 returning 1`, [pathA])
+aDel.rows.length === 0 ? (pass++, console.log("  ok   players can't delete originals (closes the upload-delete quota loop)")) : (fail++, console.log("  FAIL A deleted own original"))
 
 console.log("rate limits")
 let blocked = false
@@ -124,12 +129,12 @@ for (let i = 0; i < 25; i++) {
     await submit(B, `${B}/${id}.jpg`)
   } catch (e) { if (/rate_limited/.test(e.message)) { blocked = i; break } else { console.log("   (", i, e.message, ")"); blocked = i; break } }
 }
-blocked === 20 ? (pass++, console.log("  ok   21st submission in a day is rate limited")) : (fail++, console.log("  FAIL rate limit at", blocked))
+blocked === 20 ? (pass++, console.log("  ok   21st upload or submission in a day is blocked")) : (fail++, console.log("  FAIL rate limit at", blocked))
 let upBlocked = false
 for (let i = 25; i < 40; i++) {
   try { await as(B, `insert into storage.objects (bucket_id, name) values ('submissions', $1)`, [`${B}/dddddddd-dddd-4ddd-8ddd-${String(i).padStart(12, "0")}.jpg`]) } catch { upBlocked = i; break }
 }
-upBlocked === 34 ? (pass++, console.log("  ok   31st upload in a day is blocked (21 earlier + 9)")) : (fail++, console.log("  FAIL upload quota at", upBlocked))
+upBlocked === 25 ? (pass++, console.log("  ok   uploads stay blocked once the daily 20 are used")) : (fail++, console.log("  FAIL upload quota at", upBlocked))
 
 console.log("source constraint")
 await expectOk("places accepts community", () => db.query(`insert into public.places (image_url, lat, lng, source, source_id) values ('c.webp', 42.34, -71.09, 'community', 'sub-1')`))

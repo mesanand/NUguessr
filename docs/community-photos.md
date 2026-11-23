@@ -58,7 +58,7 @@ Look at every photo at full resolution (a sign unreadable at 960 px can be reada
 ## Privacy
 
 - Originals (full EXIF: GPS, device, time) live only in the private `submissions` bucket until a decision is made, then `places:submissions:sync` deletes them. Rejected and withdrawn local copies in `data/submissions/` are deleted too; approved ones are kept locally (git-ignored) so a crop can be redone. `--purge-local` deletes those as well.
-- `photo_submissions.contact` is optional, admin-only and only for takedown requests. Players can never read the table; `my_submissions()` returns status only.
+- `photo_submissions.submitter_email` is a required `@northeastern.edu` address (format-checked, **not verified**), admin-only. It's for tracing a bad submission and for takedown requests; treat it as a lead, not proof. Players can never read the table; `my_submissions()` returns status only.
 - Credit is the name the contributor typed (≤ 40 chars) or "NUguessr community". It's rendered as plain text everywhere.
 
 ## Takedown requests

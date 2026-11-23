@@ -52,7 +52,7 @@ returns text
 language sql
 immutable
 set search_path = ''
-as $$ select '2026-11-v1'::text $$;
+as $$ select '2026-11-v2'::text $$;
 
 -- Trim, collapse whitespace, drop control characters; null when empty.
 create or replace function public.clean_short_text(p_value text, p_max integer)
@@ -77,7 +77,7 @@ grant execute on function public.contribute_consent_version() to anon, authentic
 -- ---------------------------------------------------------------------
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
-  'submissions', 'submissions', false, 31457280,  -- 30 MB
+  'submissions', 'submissions', false, 15728640,  -- 15 MB
   array['image/jpeg', 'image/png', 'image/heic', 'image/heif', 'image/webp']
 )
 on conflict (id) do update
@@ -99,10 +99,10 @@ as $$
      and (select count(*) from storage.objects o
           where o.bucket_id = 'submissions'
             and (storage.foldername(o.name))[1] = auth.uid()::text
-            and o.created_at > now() - interval '1 day') < 30
+            and o.created_at > now() - interval '1 day') < 20
      and (select count(*) from storage.objects o
           where o.bucket_id = 'submissions'
-            and o.created_at > now() - interval '1 day') < 1500;
+            and o.created_at > now() - interval '1 day') < 150;
 $$;
 
 revoke all on function public.can_upload_submission() from public, anon;
@@ -130,13 +130,14 @@ create policy "Players read own submissions"
     and ((storage.foldername(name))[1] = (select auth.uid())::text or (select public.is_admin()))
   );
 
+-- Players can't delete their uploads: the daily quota counts existing
+-- objects, so upload-then-delete loops would get around it. Withdrawn and
+-- orphaned originals are deleted by scripts/places/submissions-sync.ts.
 drop policy if exists "Players delete own submissions" on storage.objects;
-create policy "Players delete own submissions"
+drop policy if exists "Admins delete submissions" on storage.objects;
+create policy "Admins delete submissions"
   on storage.objects for delete to authenticated
-  using (
-    bucket_id = 'submissions'
-    and ((storage.foldername(name))[1] = (select auth.uid())::text or (select public.is_admin()))
-  );
+  using (bucket_id = 'submissions' and (select public.is_admin()));
 -- No update policy: an uploaded original can't be swapped after submission.
 
 -- ---------------------------------------------------------------------
@@ -157,7 +158,8 @@ create table if not exists public.photo_submissions (
   building text,
   spot_description text,
   credit_name text,            -- null = credit the anonymous fallback
-  contact text,                -- admin-only, for takedown requests; never shown
+  submitter_email text not null  -- @northeastern.edu, not verified; admin-only, never shown
+    check (submitter_email ~ '^[a-z0-9._%+-]+@northeastern\.edu$'),
   consent_version text not null,
   status text not null default 'pending'
     check (status in ('pending', 'approved', 'rejected', 'withdrawn')),
@@ -199,7 +201,7 @@ create or replace function public.submit_photo(
   p_building text default null,
   p_spot text default null,
   p_credit_name text default null,
-  p_contact text default null,
+  p_email text default null,
   p_original_filename text default null,
   p_consent_version text default null
 )
@@ -218,6 +220,11 @@ begin
   end if;
   if p_consent_version is distinct from public.contribute_consent_version() then
     raise exception 'consent_required' using errcode = 'P0001';
+  end if;
+
+  -- A Northeastern address so a bad submission can be traced (not verified).
+  if p_email is null or lower(btrim(p_email)) !~ '^[a-z0-9._%+-]+@northeastern\.edu$' then
+    raise exception 'bad_email' using errcode = 'P0001';
   end if;
 
   -- The file must be the caller's own, in their own folder, already uploaded.
@@ -244,7 +251,7 @@ begin
     raise exception 'rate_limited' using errcode = 'P0001';
   end if;
   if (select count(*) from public.photo_submissions
-      where created_at > now() - interval '1 day') >= 500 then
+      where created_at > now() - interval '1 day') >= 150 then
     raise exception 'rate_limited' using errcode = 'P0001';
   end if;
   if exists (select 1 from public.photo_submissions where storage_path = p_path) then
@@ -254,7 +261,7 @@ begin
   insert into public.photo_submissions (
     user_id, storage_path, original_filename, lat, lng, location_source,
     exif_lat, exif_lng, captured_at, indoor, building, spot_description,
-    credit_name, contact, consent_version
+    credit_name, submitter_email, consent_version
   )
   values (
     uid, p_path, public.clean_short_text(p_original_filename, 120),
@@ -266,7 +273,7 @@ begin
     public.clean_short_text(p_building, 80),
     public.clean_short_text(p_spot, 200),
     public.clean_short_text(p_credit_name, 40),
-    public.clean_short_text(p_contact, 120),
+    lower(btrim(p_email)),
     p_consent_version
   )
   returning id into new_id;
@@ -277,7 +284,7 @@ $$;
 
 -- ---------------------------------------------------------------------
 -- my_submissions: the caller's own submissions, status only (no admin notes,
--- no contact, no coordinates).
+-- no email, no coordinates).
 -- ---------------------------------------------------------------------
 create or replace function public.my_submissions()
 returns table (
@@ -307,9 +314,8 @@ $$;
 
 -- ---------------------------------------------------------------------
 -- withdraw_submission: owner withdraws a PENDING submission. Returns the
--- storage path so the client can delete its own original (storage objects
--- must be deleted through the Storage API, not SQL). The pipeline's cleanup
--- step deletes anything the client didn't.
+-- storage path; the original is deleted by scripts/places/submissions-sync.ts
+-- (players can't delete storage objects, see the policy above).
 -- ---------------------------------------------------------------------
 create or replace function public.withdraw_submission(p_id uuid)
 returns text

@@ -21,7 +21,7 @@ if (!url || !anon) {
 }
 
 const BUCKET = "submissions"
-const CONSENT = "2026-11-v1" // public.contribute_consent_version()
+const CONSENT = "2026-11-v2" // public.contribute_consent_version()
 const ON_CAMPUS = { lat: 42.33985, lng: -71.08905 }
 
 let failures = 0
@@ -47,7 +47,7 @@ function submitArgs(path: string, over: Record<string, unknown> = {}) {
     p_building: "Security test",
     p_spot: "automated check",
     p_credit_name: null,
-    p_contact: "security-test@example.invalid",
+    p_email: "nuguessr-security-test@northeastern.edu",
     p_original_filename: "security-test.jpg",
     p_consent_version: CONSENT,
     ...over,
@@ -99,6 +99,8 @@ async function main() {
     ["missing consent refused", { p_consent_version: null }, /consent_required/],
     ["old consent version refused", { p_consent_version: "2020-01-v0" }, /consent_required/],
     ["bad location source refused", { p_location_source: "gps" }, /bad_location/],
+    ["missing email refused", { p_email: null }, /bad_email/],
+    ["non-Northeastern email refused", { p_email: "someone@gmail.com" }, /bad_email/],
   ]
   for (const [name, over, re] of cases) {
     const r = await A.db.rpc("submit_photo", submitArgs(aPath, over))
@@ -119,15 +121,15 @@ async function main() {
   // --- reading submissions
   const bRows = await B.db.from("photo_submissions").select("*")
   check("players cannot read the submissions table", !!bRows.error || (bRows.data ?? []).length === 0)
-  const aRows = await A.db.from("photo_submissions").select("contact, lat, lng")
-  check("not even their own row directly (contact/coords stay private)", !!aRows.error || (aRows.data ?? []).length === 0)
+  const aRows = await A.db.from("photo_submissions").select("submitter_email, lat, lng")
+  check("not even their own row directly (email/coords stay private)", !!aRows.error || (aRows.data ?? []).length === 0)
   const anonRows = await nobody.from("photo_submissions").select("*")
   check("no session cannot read the submissions table", !!anonRows.error || (anonRows.data ?? []).length === 0)
 
   const mineA = await A.db.rpc("my_submissions")
   const rowA = (mineA.data ?? [])[0] as Record<string, unknown> | undefined
   check("my_submissions returns the player's own submission", (mineA.data ?? []).length === 1 && rowA?.status === "pending", mineA.error?.message)
-  check("my_submissions hides contact and coordinates", !!rowA && !("contact" in rowA) && !("lat" in rowA) && !("review_notes" in rowA))
+  check("my_submissions hides email and coordinates", !!rowA && !("submitter_email" in rowA) && !("lat" in rowA) && !("review_notes" in rowA))
   const mineB = await B.db.rpc("my_submissions")
   check("my_submissions never shows other players' submissions", (mineB.data ?? []).length === 0, mineB.error?.message)
 
@@ -137,12 +139,11 @@ async function main() {
   const w = await A.db.rpc("withdraw_submission", { p_id: ok.data })
   check("owner can withdraw a pending submission", !w.error && w.data === aPath, w.error?.message)
   const rm = await A.db.storage.from(BUCKET).remove([aPath])
-  check("owner can delete their original", !rm.error && (rm.data ?? []).length === 1, rm.error?.message)
+  check("players can't delete originals (the cleanup script does)", !!rm.error || (rm.data ?? []).length === 0, rm.error?.message)
   const again = await A.db.rpc("withdraw_submission", { p_id: ok.data })
   check("cannot withdraw twice", !!again.error, again.error?.message)
 
-  // Tidy any stray test uploads (A's foreign/svg/nested should not exist).
-  await A.db.storage.from(BUCKET).remove([aPath])
+  // The withdrawn test original is deleted by places:submissions:sync.
 
   console.log(failures ? `\n${failures} check(s) FAILED` : "\nAll contribute security checks passed")
   process.exit(failures ? 1 : 0)
